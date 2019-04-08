@@ -1,0 +1,15 @@
+{
+  "name": "onǣlan",
+  "version": "0.6.0",
+  "description": "Generic annealing system for optimizing hard problems.",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Phrogz/onǣlan.git"
+  },
+  "author": "Phrogz",
+  "license": "MIT"
+}
