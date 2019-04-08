@@ -71,7 +71,7 @@ module.exports = function ({
             checkin(status)
         }
 
-        console.log([status.runVariations,status.roundNumber,status.currentState, status.currentScore.score, status.bestState, status.bestScore.score, status.currentTemp].join(','))
+        // console.log(`[${[status.runVariations,status.roundNumber,status.currentState, status.currentScore.score, status.bestState, status.bestScore.score, status.currentTemp].join(',')}],`)
 
         if (restartAfterTemperature) status.currentTemp = tempStart / (tempScale * (tempBasedOnTime ? status.roundElapsed : status.roundVariations) + 1)
 
@@ -108,7 +108,7 @@ module.exports = function ({
     )
 
     const elapsed = Date.now() / 1000 - runStart;
-    return {state:status.bestState, score:status.bestScore, elapsed:elapsed};
+    return {state:status.bestState, score:status.bestScore, elapsed:elapsed, variations:status.runVariations, rounds:status.roundNumber};
 
     function dup(state) { return clone ? clone.call(state, state) : state }
 }

@@ -5,11 +5,15 @@ const checkin = require('./checkin')
 
 let rankings, weights
 
+// FIXME: command-line and UI driven
+const scenarioName = 'travellingdiner'
+
 // let scenario = reloadScenario('hatshuffler')
-let scenario = reloadScenario('maxseeker')
-let {state:bestState, score:bestScore, elapsed} = optimize(scenario)
-console.log(`Finished in ${elapsed.toFixed(1)}s with a score of ${bestScore.score.toFixed(2)}`)
-if (scenario.save) exportState(scenario.save, bestState)
+// let scenario = reloadScenario('maxseeker')
+let scenario = reloadScenario(scenarioName)
+let {state:bestState, score:bestScore, elapsed, variations, rounds} = optimize(scenario)
+console.log(`Tried ${variations} variations in ${elapsed.toFixed(2)}s (${(variations/elapsed).toFixed(0)}/sec), resulting in a score of ${bestScore.score.toFixed(2)}`)
+if (scenario.save) exportState(scenario.save, bestState, scenarioName)
 
 function reloadScenario(name) {
 	const scenarioDir = `./scenarios/${name}`
@@ -53,11 +57,12 @@ function weightedRankings(state) {
 	return result;
 }
 
-function exportState(saveƒ, state) {
+function exportState(saveƒ, state, scenarioName) {
 	const fs = require('fs')
 	const {content, type} = saveƒ.call(state, state)
-	const path = `data/state-${iso8601Stamp()}.${type}`
-	if (!fs.existsSync('data')) fs.mkdirSync('data')
+	const directory = `scenarios/${scenarioName}/data`
+	const path = `${directory}/state-${iso8601Stamp()}.${type}`
+	if (!fs.existsSync(directory)) fs.mkdirSync(directory)
 	fs.writeFileSync(path, content)
 	console.log(`Wrote ${path}`)
 }

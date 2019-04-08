@@ -2,16 +2,16 @@ module.exports = {
     name: 'Function Maximizer',
 
     initial: () => 0.5,
-    vary:    x  => Math.min(1,Math.max(0,x+(Math.random()-0.5)*0.1)),
+    vary:    x  => Math.min(1,Math.max(0,x+(Math.random()-0.5)*0.02)),
     save:    x  => ({content:x+'', type:'txt'}),
     load:    parseFloat,
 
-    tempStart:              5,
-    tempFalloffVariations:  50,
+    tempStart:              50,
+    tempFalloffVariations:  500,
 
-    restartAfterVariations: 1e2,
+    restartAfterVariations: 1e3,
     // stopAfterTime:            1,
-    stopAfterVariations:    1e3,
+    stopAfterVariations:    9990,
 
     weightings: {
         max:   1,

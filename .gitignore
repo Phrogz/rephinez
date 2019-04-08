@@ -1,7 +1,9 @@
+tmp.*
 *.csv
 *.ods
 .DS_Store
-!data/demo.csv
+data
+!data/README.md
 .vscode
 
 # Logs
