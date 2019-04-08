@@ -46,9 +46,9 @@ Onǣlan requires [Node.js](https://nodejs.org/en/), and runs on a wide variety o
 The easiest way to get the project is to use [Git](https://git-scm.com/) to pull the source code:
 
 ```sh
-# creates and fills a directory `hatshuffler` in your current directory
-git clone https://github.com/Phrogz/onǣlan.git
-cd onǣlan
+# creates and fills a directory `on-lan` in your current directory
+git clone https://github.com/Phrogz/on-lan.git
+cd on-lan
 ```
 
 
