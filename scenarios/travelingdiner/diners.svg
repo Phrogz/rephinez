@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 308.8 215.4">
+	<defs>
+	<style>
+		circle { stroke:black; stroke-width:1 }
+		.meat { fill:#FF54B6 }
+		.veg  { fill:#81FF63 }
+		line { stroke:black; stroke-width:1; marker-end:url(#head) }
+	</style>
+		<marker id='head' orient='auto' markerWidth='2' markerHeight='4' refX='0.1' refY='2'>
+      <path d='M0,0 V4 L2,2 Z' fill='black' />
+    </marker>
+	</defs>
+	<circle class="meat" cx="27.4" cy="26.2" r="6"/>
+	<circle class="veg"  cx="71.8" cy="59.2" r="6"/>
+	<circle class="veg"  cx="6.5" cy="76.5" r="6"/>
+	<circle class="meat" cx="47.8" cy="94.5" r="6"/>
+	<circle class="meat" cx="252" cy="6.5" r="6"/>
+	<circle class="meat" cx="214.9" cy="34" r="6"/>
+	<circle class="veg"  cx="302.3" cy="47.2" r="6"/>
+	<circle class="veg"  cx="260.4" cy="70.6" r="6"/>
+	<circle class="veg"  cx="125.1" cy="149" r="6"/>
+	<circle class="meat" cx="100.5" cy="186.1" r="6"/>
+	<circle class="meat" cx="264" cy="168.8" r="6"/>
+	<circle class="veg"  cx="137" cy="208.9" r="6"/>
+	<circle class="meat" cx="153.8" cy="174.2" r="6"/>
+	<circle class="meat" cx="252" cy="150.8" r="6"/>
+	<line x1="27.4" y1="26.2" x2="100.5" y2="186.1" />
+</svg>

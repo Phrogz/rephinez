@@ -6,7 +6,7 @@ const checkin = require('./checkin')
 let rankings, weights
 
 // FIXME: command-line and UI driven
-const scenarioName = 'travellingdiner'
+const scenarioName = 'travelingdiner'
 
 // let scenario = reloadScenario('hatshuffler')
 // let scenario = reloadScenario('maxseeker')
