@@ -1,18 +1,16 @@
-const annealer = require('./annealer')
 const fs = require('fs')
 const path = require('path')
-const checkin = require('./checkin')
-
-let rankings, weights
+const annealer = require('./lib/annealer')
+const checkin = require('./lib/checkin')
+const {abbreviate:short} = require('./lib/utils')
+let yardsticks
 
 // FIXME: command-line and UI driven
 const scenarioName = 'travelingdiner'
 
-// let scenario = reloadScenario('hatshuffler')
-// let scenario = reloadScenario('maxseeker')
 let scenario = reloadScenario(scenarioName)
 let {state:bestState, score:bestScore, elapsed, variations, rounds} = optimize(scenario)
-console.log(`Tried ${variations} variations in ${elapsed.toFixed(2)}s (${(variations/elapsed).toFixed(0)}/sec), resulting in a score of ${bestScore.score.toFixed(2)}`)
+console.log(`Tried ${short(variations)} variations in ${short(elapsed,2)}s (${short(variations/elapsed)}/sec), resulting in a score of ${short(bestScore.score,2)}`)
 if (scenario.save) exportState(scenario.save, bestState, scenarioName)
 
 function reloadScenario(name) {
@@ -20,12 +18,12 @@ function reloadScenario(name) {
 	if (!fs.existsSync(scenarioDir)) {
 		console.error(`Cannot load scenario "${name}" because ${scenarioDir} does not exist`)
 	} else {
-		// Reset and load the rankings
-		rankings = {}
-		const rankingDir = `${scenarioDir}/rankings`
-		fs.readdirSync(rankingDir).forEach(f => {
-			const rankingName = path.basename(f, path.extname(f))
-			rankings[rankingName] = rerequire(`${rankingDir}/${f}`)
+		// Reset and load the yardsticks
+		yardsticks = {}
+		const dir = `${scenarioDir}/yardsticks`
+		fs.readdirSync(dir).forEach(file => {
+			const name = path.basename(file, path.extname(file))
+			yardsticks[name] = rerequire(`${dir}/${file}`)
 		});
 
 		return rerequire(`${scenarioDir}/scenario`)
@@ -36,25 +34,6 @@ function reloadScenario(name) {
 function rerequire(path) {
 	delete require.cache[require.resolve(path)]
 	return require(path)
-}
-
-// Run the rankings in the rankings folder, based on their presence in config.js/weightings
-// Weight their scores based on those weightings, and aggregate all the stats they generate
-function weightedRankings(state) {
-	const result = {score:0, scores:{}, stats:{}};
-	let totalWeight=0;
-	for (const name in weights) {
-		const weight = weights[name];
-		if (weight) {
-			const {score, stats} = rankings[name](state);
-			result.score += score * weight;
-			totalWeight += weight;
-			result.scores[name] = score;
-			Object.assign(result.stats, stats);
-		}
-	}
-	result.score /= totalWeight;
-	return result;
 }
 
 function exportState(saveƒ, state, scenarioName) {
@@ -69,9 +48,25 @@ function exportState(saveƒ, state, scenarioName) {
 
 function optimize(scenario) {
 	const options = Object.assign({}, scenario)
-	options.measure = weightedRankings
 	options.checkin = checkin
-	weights = scenario.weightings
+	options.measure = state => {
+		const result = {score:0, scores:{}, stats:{}}
+		let totalWeight=0
+		for (const name in scenario.yardsticks) {
+			const opts = scenario.yardsticks[name]
+			if (opts && opts.weight!==0 && yardsticks[name]) {
+				let {score, stats} = yardsticks[name](state);
+				const weight = typeof(opts)==='number' ? opts : (opts.weight || 1)
+				score *= weight * (opts.scale || 1)
+				result.score += score
+				totalWeight += weight
+				result.scores[name] = score
+				Object.assign(result.stats, stats)
+			}
+		}
+		for (const name in scenario.yardsticks) result.scores[name] /= totalWeight
+		return result;
+	}
 	return annealer(options);
 }
 

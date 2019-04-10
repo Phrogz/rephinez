@@ -13,9 +13,7 @@ module.exports = {
     // stopAfterTime:            1,
     stopAfterVariations:    9990,
 
-    weightings: {
-        max:   1,
-    }
+    yardsticks: { max:1 }
 }
 
 function initial() { return 0.5 }

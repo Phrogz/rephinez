@@ -29,7 +29,7 @@ module.exports = {
     checkinAfterVariations: 5e3,
 
     // rankings to run, and how important each ranking is relative to the others
-    weightings: {
+    yardsticks: {
         distributedWomen:      0, // not needed; women are pre-distributed and kept that way by gender-based swaps
         distributedGiants:     4,
         distributedSpeed:      2,

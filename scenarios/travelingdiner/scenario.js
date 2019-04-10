@@ -28,14 +28,13 @@ module.exports = {
     tempStart:              5e2,
     tempFalloffVariations:  1e2,
 
-    checkinAfterVariations: 1e5,
+    checkinAfterVariations: 3e5,
+    restartAfterVariations: 1e2,
+    stopAfterVariations:    1e7,
 
-    restartAfterVariations: 5e2,
-    stopAfterVariations:    1e6,
-
-    weightings: {
-        distance:    2,
-        alternating: 1
+    yardsticks: {
+        distance:    { weight:2, scale:0.01 },
+        alternating: { weight:1e9, scale:2    }
     }
 }
 
