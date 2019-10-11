@@ -13,17 +13,6 @@ class Round {
    static fromArray(a) {
       return new Round(a.map( ([t1,t2]) => new Game(t1,t2) ))
    }
-   doubleHeaders() {
-      const lastGameByTeam = {}
-      const doubles = {}
-      this.games.forEach((g,i) => {
-         if (lastGameByTeam[g.t1] == i-1) doubles[g.t1] = (doubles[g.t1] || 0) + 1
-         if (lastGameByTeam[g.t2] == i-1) doubles[g.t2] = (doubles[g.t2] || 0) + 1
-         lastGameByTeam[g.t1] = i;
-         lastGameByTeam[g.t2] = i;
-      })
-      return doubles
-   }
    tripleHeaders() {
 
    }
@@ -31,6 +20,10 @@ class Round {
 
    }
    tripleSkips() {
+
+   }
+   lateGames() {
+      const result = {}
 
    }
 }
@@ -41,6 +34,45 @@ class Schedule {
    }
    static fromArray(a) {
       return new Schedule(a.map(Round.fromArray))
+   }
+   doubleHeaders() {
+      const result = {}
+      this.rounds.forEach(round => {
+         const lastGameByTeam = {}
+         round.games.forEach((g,i) => {
+            if (lastGameByTeam[g.t1] == i-1) result[g.t1] = (result[g.t1] || 0) + 1
+            if (lastGameByTeam[g.t2] == i-1) result[g.t2] = (result[g.t2] || 0) + 1
+            lastGameByTeam[g.t1] = i;
+            lastGameByTeam[g.t2] = i;
+         })
+      })
+      return result
+   }
+   earlyGames() {
+      const result = {}
+      this.rounds.forEach(round => {
+         const earlyIndex = (round.games.length / 3) - 1
+         round.games.forEach((g,i) => {
+            if (i<earlyIndex) {
+               result[g.t1] = (result[g.t1] || 0) + 1
+               result[g.t2] = (result[g.t2] || 0) + 1
+            }
+         })
+      })
+      return result
+   }
+   lateGames() {
+      const result = {}
+      this.rounds.forEach(round => {
+         const lateIndex  = round.games.length - (round.games.length / 3)
+         round.games.forEach((g,i) => {
+            if (i>lateIndex) {
+               result[g.t1] = (result[g.t1] || 0) + 1
+               result[g.t2] = (result[g.t2] || 0) + 1
+            }
+         })
+      })
+      return result
    }
 }
 
@@ -60,7 +92,10 @@ const sixTeams = Schedule.fromArray(
   [[4,2],[2,5],[4,5],[2,6],[4,3],[5,1],[3,6],[1,6],[1,3]]]
 )
 
-console.log(s.rounds[0].doubleHeaders())
+console.log(sixTeams.doubleHeaders())
+console.log(eightTeams.doubleHeaders())
+console.log(eightTeams.earlyGames())
+console.log(eightTeams.lateGames())
 
 module.exports = {
 
