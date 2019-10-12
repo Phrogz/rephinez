@@ -15,5 +15,3 @@ module.exports = {
 
     yardsticks: { max:1 }
 }
-
-function initial() { return 0.5 }

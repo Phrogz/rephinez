@@ -57,8 +57,8 @@ function optimize(scenario) {
 			if (opts && opts.weight!==0 && yardsticks[name]) {
 				let {score, stats} = yardsticks[name](state);
 				const weight = typeof(opts)==='number' ? opts : (opts.weight || 1)
-				score *= weight * (opts.scale || 1)
-				result.score += score
+				score *= weight
+				result.score += score * (opts.scale || 1)
 				totalWeight += weight
 				result.scores[name] = score
 				Object.assign(result.stats, stats)
