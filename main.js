@@ -6,7 +6,7 @@ const {abbreviate:short} = require('./lib/utils')
 let yardsticks
 
 // FIXME: command-line and UI driven
-const scenarioName = 'travelingdiner'
+const scenarioName = 'indoor'
 
 let scenario = reloadScenario(scenarioName)
 let {state:bestState, score:bestScore, elapsed, variations, rounds} = optimize(scenario)
@@ -75,4 +75,3 @@ function iso8601Stamp() {
 	return [now.getFullYear(), pad(now.getMonth()+1), pad(now.getDate()), 'T', pad(now.getHours()), pad(now.getMinutes()), pad(now.getSeconds())].join('')
 	function pad(n) { return (n<10 ? '0' : '')+n }
 }
-

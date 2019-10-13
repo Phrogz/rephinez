@@ -166,6 +166,9 @@ named with the current date and time, e.g. `state-20190322T150550.csv`.
 # TODO
 
 * Finish examples
+* Update documentation for yardsticks
+* Update documentation for mutating vs. fresh states
+* Make the console-based interface take
 * Provide a web-based front-end in lieu of the ghetto console-based interface.
 
 
