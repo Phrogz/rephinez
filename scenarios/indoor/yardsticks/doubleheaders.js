@@ -1,4 +1,4 @@
-const {stddev} = require('./utils')
+const {stddev} = require('../utils')
 module.exports = function(season) {
     const counts = season.doubleHeaders()
     return {

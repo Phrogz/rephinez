@@ -119,7 +119,7 @@ class Schedule {
          const lastGameIndexByTeam = {}
          round.games.forEach((game,i) => {
             game.teams.forEach(t => {
-               if (lastGameIndexByTeam[t]!=null) result[t] += i-lastGameIndexByTeam[t]-1;
+               if (lastGameIndexByTeam[t]!=null) result[t] += (i-lastGameIndexByTeam[t]-1)**2;
                lastGameIndexByTeam[t] = i;
             })
          })
@@ -185,17 +185,17 @@ module.exports = {
    clone:   Schedule.prototype.clone,
 
    /*** controlling the temperature; either falloff time or variations must be supplied (but not both) ******/
-   tempStart:                  10, // temperature to use when starting a round of optimization
+   tempStart:                  1, // temperature to use when starting a round of optimization
    // tempFalloffTime:            2, // number of seconds after which it should reach one percent of initial temp
    tempFalloffVariations:    1e2, // number of variations after which it should reach one percent of initial temp
 
    /*** how often to peek at the optimization progress ******************************************************/
    // checkinAfterTime:           0.5, // invoke the 'checkin' callback every this-many seconds
-   checkinAfterVariations:   1e4,
+   checkinAfterVariations:   1e5,
 
    /*** (optional) occasionally restart optimization, starting from the best state **************************/
    // restartAfterTime:           3, // restart a new round after this many seconds in the round
-   restartAfterVariations:   5e2, // restart a new round after this many variations in the round
+   restartAfterVariations:   4e2, // restart a new round after this many variations in the round
    // restartAfterScore:         20, // restart a new round if a score greater than or equal to this is accepted
    // restartAfterTemperature: 1e-6, // restart a new round if the temperature falls below this
 
@@ -207,10 +207,10 @@ module.exports = {
 
    // rankings to run, and the default importance of each ranking relative to the others
    yardsticks: {
-      doubleheaders:  10,
-      tripleheaders:  100,
-      evenscheduling: 1,
-      gamegaps:       5,
+      doubleheaders:  20,
+      // tripleheaders:  100,
+      evenscheduling: 0.1,
+      gamegaps:       3,
    }
 
 };

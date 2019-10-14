@@ -1,4 +1,4 @@
-const {stddev} = require('./utils')
+const {stddev} = require('../utils')
 module.exports = function(season) {
     const early = season.earlyGames()
     const late  = season.lateGames()

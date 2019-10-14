@@ -1,5 +1,5 @@
 # Overview
-Onǣlan is a generic tool for optimizating hard-to-solve problems through a bit of brute force, a bit of luck,
+Rephinez is a generic tool for optimizating hard-to-solve problems through a bit of brute force, a bit of luck,
 and a bit of artistry.
 
 For example, maybe you want to create a really "good" schedule for your sports league. You provide:
@@ -8,9 +8,9 @@ For example, maybe you want to create a really "good" schedule for your sports l
 * A method for taking one schedule and producing a slightly different one.
 * One or more methods that measure a schedule and tell how "good" or "bad" it is.
 
-Onǣlan will (with a little help from you) keep varying the schedule, guiding towards a really good one.
+Rephinez will (with a little help from you) keep varying the schedule, guiding towards a really good one.
 
-Onǣlan uses [simulated annealing](https://en.wikipedia.org/wiki/Simulated_annealing) to "solve" what
+Rephinez uses [simulated annealing](https://en.wikipedia.org/wiki/Simulated_annealing) to "solve" what
 would otherwise be nightmare problems in combinatorics. It doesn't find the absolute best result,
 but it finds ones that are quite good, relatively quickly. This takes a little bit of art and finesse from you
 to help tune the algorithm as it runs. More on that below.
@@ -41,14 +41,14 @@ to help tune the algorithm as it runs. More on that below.
 
 # Installing
 
-Onǣlan requires [Node.js](https://nodejs.org/en/), and runs on a wide variety of operating systems.
+Rephinez requires [Node.js](https://nodejs.org/en/), and runs on a wide variety of operating systems.
 
 The easiest way to get the project is to use [Git](https://git-scm.com/) to pull the source code:
 
 ```sh
-# creates and fills a directory `on-lan` in your current directory
-git clone https://github.com/Phrogz/on-lan.git
-cd on-lan
+# creates and fills a directory `rephinez` in your current directory
+git clone https://github.com/Phrogz/rephinez.git
+cd rephinez
 ```
 
 
@@ -99,7 +99,7 @@ module.exports = {
     stopAfterRounds:          1e3, // stop optimization after this many rounds have been exhausted
 
     // rankings to run, and the default importance of each ranking relative to the others
-    weightings: {
+    yardsticks: {
         ranking1Name:   3.2,
         ranking2Name:   1.7,
         ranking3Name:   91,
@@ -119,7 +119,7 @@ on the instance. For example:
 ## Ranking your States
 
 Your scenario must also have a `rankings` subdirectory, with one or more ranking modules in it, whose file
-names match the names supplied in your `weightings` description.
+names match the names supplied in your `yardsticks` description.
 
 
 # Running
@@ -179,6 +179,6 @@ named with the current date and time, e.g. `state-20190322T150550.csv`.
 
 # License & Contact
 
-Onǣlan is copyright ©2019 by Gavin Kistner and is licensed under the [MIT License](http://opensource.org/licenses/MIT). See the LICENSE file for more details.
+Rephinez is copyright ©2019 by Gavin Kistner and is licensed under the [MIT License](http://opensource.org/licenses/MIT). See the LICENSE file for more details.
 
-For bugs or feature requests please open [issues on GitHub](https://github.com/Phrogz/on-lan/issues). For other communication you can [email the author](mailto:!@phrogz.net?subject=onǣlan) directly.
+For bugs or feature requests please open [issues on GitHub](https://github.com/Phrogz/rephinez/issues). For other communication you can [email the author](mailto:!@phrogz.net?subject=Rephinez) directly.

@@ -1,17 +1,34 @@
 const fs = require('fs')
 const path = require('path')
 const annealer = require('./lib/annealer')
-const checkin = require('./lib/checkin')
+const consoleCheckin = require('./lib/checkin')
 const {abbreviate:short} = require('./lib/utils')
 let yardsticks
 
-// FIXME: command-line and UI driven
-const scenarioName = 'indoor'
+if (process.send) {
+	process.on('message', message => {
+		switch (message.action) {
+			case 'start':   optimizeWeb(message.scenario, false); break;
+			case 'restart': optimizeWeb(message.scenario, true); break;
+			case 'stop':    stopOptimization(); break;
+			case 'weight':  changeWeight(message.scenario, message.yardstick, message.weight); break;
+		}
+	})
+} else {
+	// FIXME: command-line and UI driven
+	const scenarioName = 'indoor'
+	let scenario = reloadScenario(scenarioName)
+	let {state:bestState, score:bestScore, elapsed, variations, rounds} = optimize(scenario, consoleCheckin)
+	console.log(`Tried ${short(variations)} variations in ${short(elapsed,2)}s (${short(variations/elapsed)}/sec), resulting in a score of ${short(bestScore.score,2)}`)
+	if (scenario.save) exportState(scenario.save, bestState, scenarioName)
+}
 
-let scenario = reloadScenario(scenarioName)
-let {state:bestState, score:bestScore, elapsed, variations, rounds} = optimize(scenario)
-console.log(`Tried ${short(variations)} variations in ${short(elapsed,2)}s (${short(variations/elapsed)}/sec), resulting in a score of ${short(bestScore.score,2)}`)
-if (scenario.save) exportState(scenario.save, bestState, scenarioName)
+function optimizeWeb(scenarioName) {
+	let scenario = reloadScenario(scenarioName)
+	let {state:bestState, score:bestScore, elapsed, variations, rounds} = optimize(scenario, webCheckin)
+	console.log(`Tried ${short(variations)} variations in ${short(elapsed,2)}s (${short(variations/elapsed)}/sec), resulting in a score of ${short(bestScore.score,2)}`)
+	if (scenario.save) exportState(scenario.save, bestState, scenarioName)
+}
 
 function reloadScenario(name) {
 	const scenarioDir = `./scenarios/${name}`
@@ -46,7 +63,7 @@ function exportState(saveƒ, state, scenarioName) {
 	console.log(`Wrote ${path}`)
 }
 
-function optimize(scenario) {
+function optimize(scenario, checkin) {
 	const options = Object.assign({}, scenario)
 	options.checkin = checkin
 	options.measure = state => {

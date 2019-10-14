@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html><head>
+    <title>Rephinez</title>
+</head><body>
+<h1>Rephinez</h1>
+<label id="scenarios">Scenario: <select></select></label>
+<fieldset id="yardsticks">
+    <legend>Yardsticks</legend>
+    <ul></ul>
+</fieldset>
+<script>
+    const scenarios = document.querySelector('#scenarios select')
+    const yardsticks = document.querySelector('#yardsticks ul')
+    scenarios.addEventListener('focus', checkScenarios, false)
+    scenarios.addEventListener('change', switchScenario, false)
+
+    checkScenarios();
+
+    async function checkScenarios() {
+        const response = await fetch('/scenarios')
+        const json = await response.json()
+        let update = false
+        json.forEach((s,i) => {
+            if (!scenarios.options[i] || scenarios.options[i].text!=s) update = true
+        })
+        if (update) {
+            const val = scenarios.value
+            scenarios.options.length = 0
+            json.forEach(s => scenarios.add(new Option(s)))
+            scenarios.value = val
+        }
+    }
+
+    async function switchScenario() {
+        abortRun()
+        clearYardsticks()
+        const scenario = scenarios.value
+        if (scenario) {
+            const response = await fetch(`/yardsticks/${scenario}`)
+            const json = await response.json()
+            console.log('Yardsticks', json)
+        }
+    }
+
+    async function abortRun() {
+        fetch('/stop')
+    }
+
+    async function clearYardsticks() {
+        yardsticks.innerHTML = ''
+    }
+</script>
+</body></html>
