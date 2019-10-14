@@ -4,6 +4,14 @@ const fork    = require('child_process').fork
 const program = require('path').resolve('main.js')
 const worker  = fork(program, [], {stdio:['inherit', 'inherit', 'inherit', 'ipc']})
 
+let scenarios
+
+worker.on('message', msg => {
+	switch (msg.action) {
+		case 'scenarios': scenarios=msg.data; break;
+	}
+})
+
 const scenarioURL = new RegExp('/yardsticks/(?<name>[^/?#]+)')
 HTTP.createServer(function (req, res) {
 	let match
@@ -28,7 +36,7 @@ function renderHome(res) {
 
 function sendScenarios(res) {
 	res.writeHead(200, {'Content-Type': 'application/json'})
-	res.write('["a", "boo", "radley"]')
+	res.write(JSON.stringify(scenarios))
 }
 
 function abortRun() {

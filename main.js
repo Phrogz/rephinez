@@ -1,33 +1,61 @@
 const fs = require('fs')
 const path = require('path')
 const annealer = require('./lib/annealer')
-const consoleCheckin = require('./lib/checkin')
+const checkinConsole = require('./lib/checkinConsole')
 const {abbreviate:short} = require('./lib/utils')
 let yardsticks
 
 if (process.send) {
 	process.on('message', message => {
 		switch (message.action) {
-			case 'start':   optimizeWeb(message.scenario, false); break;
-			case 'restart': optimizeWeb(message.scenario, true); break;
-			case 'stop':    stopOptimization(); break;
+			case 'restart': restart(message.scenario); optimizeWeb(message.scenario); break;
+			case 'start':   optimizeWeb(message.scenario); break;
 			case 'weight':  changeWeight(message.scenario, message.yardstick, message.weight); break;
 		}
 	})
+	sendScenarios()
 } else {
-	// FIXME: command-line and UI driven
+	// FIXME: make this command-line driven
 	const scenarioName = 'indoor'
 	let scenario = reloadScenario(scenarioName)
-	let {state:bestState, score:bestScore, elapsed, variations, rounds} = optimize(scenario, consoleCheckin)
+	let {state:bestState, score:bestScore, elapsed, variations, rounds} = optimize(scenario, checkinConsole)
 	console.log(`Tried ${short(variations)} variations in ${short(elapsed,2)}s (${short(variations/elapsed)}/sec), resulting in a score of ${short(bestScore.score,2)}`)
 	if (scenario.save) exportState(scenario.save, bestState, scenarioName)
 }
 
+let activeScenario
+
+function restart(scenarioName) {
+	activeScenario = reloadScenario(scenarioName)
+	activeScenario.initialState = activeScenario.initial()
+}
+
 function optimizeWeb(scenarioName) {
-	let scenario = reloadScenario(scenarioName)
-	let {state:bestState, score:bestScore, elapsed, variations, rounds} = optimize(scenario, webCheckin)
-	console.log(`Tried ${short(variations)} variations in ${short(elapsed,2)}s (${short(variations/elapsed)}/sec), resulting in a score of ${short(bestScore.score,2)}`)
-	if (scenario.save) exportState(scenario.save, bestState, scenarioName)
+	const webCheckin = ({currentState,currentScore,bestState,bestScore,currentTemp,runElapsed,runVariations,roundNumber,roundElapsed,roundVariations}={}) => {
+		activeScenario.initialState = activeScenario.clone ? activeScenario.clone.call(bestState, bestState) : bestState
+		const message = {action:'update', data:{currentScore, bestScore, currentTemp, runElapsed, runVariations, roundNumber, roundElapsed, roundVariations}}
+		if (activeScenario.html) {
+			message.data.currentState = activeScenario.html.call(currentState, currentState)
+			message.data.bestState    = activeScenario.html.call(bestState, bestState)
+		}
+		process.send(message)
+	}
+	let {state:bestState, score:bestScore, elapsed, variations, rounds} = optimize(activeScenario, webCheckin)
+	activeScenario.initialState = activeScenario.clone ? activeScenario.clone.call(bestState, bestState) : bestState
+	const message = {action:'complete', data:{bestScore, elapsed, variations, rounds}}
+	if (activeScenario.html) message.data.bestState = activeScenario.html.call(bestState, bestState)
+	process.send(message)
+
+	if (activeScenario.save) exportState(activeScenario.save, bestState, scenarioName)
+}
+
+function sendScenarios() {
+	process.send({
+		action:'scenarios',
+		data:fs.readdirSync('./scenarios', {withFileTypes:true})
+		       .filter(ent => ent.isDirectory())
+		       .map(ent => ent.name)
+	})
 }
 
 function reloadScenario(name) {
