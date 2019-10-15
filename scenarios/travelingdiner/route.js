@@ -21,6 +21,11 @@ class Route {
     serialize() {
         return { content:JSON.stringify(this.route), type:'json' }
     }
+    html() {
+        let html = require('fs').readFileSync(`${__dirname}/diners.svg`, 'utf8')
+        const lines = this.route.map( (res, i) => (i ? (`<line x1="${this.route[i-1].x}" y1="${this.route[i-1].y}" x2="${this.route[i].x}" y2="${this.route[i].y}"/>`) : '') ).join('')
+        return html.replace('</svg>', lines+'</svg>')
+    }
 }
 
 function shuffle(array) {

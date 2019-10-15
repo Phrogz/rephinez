@@ -6,7 +6,7 @@ const fs = require('fs')
 module.exports = {
     name: 'HatShuffler',
 
-    initial: createSeason({
+    initial: _ => createSeason({
         playerData: `${__dirname}/data/demo.csv`,  // see data/README.md for file details
         // season:  `${__dirname}/data/seed.csv`,  // load this file as the initial season
         teams:   4,                                // how many teams are the players split into each round

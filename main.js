@@ -8,12 +8,22 @@ let yardsticks
 if (process.send) {
 	process.on('message', message => {
 		switch (message.action) {
-			case 'restart': restart(message.scenario); optimizeWeb(message.scenario); break;
-			case 'start':   optimizeWeb(message.scenario); break;
-			case 'weight':  changeWeight(message.scenario, message.yardstick, message.weight); break;
+			case 'reset':    reset(message.scenario); break;
+			case 'start':    optimizeWeb(message.scenario); break;
+			case 'weight':   changeWeight(message.scenario, message.yardstick, message.weight); break;
+			case 'scenarios':
+				process.send({
+					action:'scenarios',
+					data:fs.readdirSync('./scenarios', {withFileTypes:true})
+							 .filter(ent => ent.isDirectory())
+							 .map(ent => ent.name)
+				})
+			break;
+			case 'yardsticks':
+				// TODO: validate that the message.scenario matches the current scenario
+			break;
 		}
 	})
-	sendScenarios()
 } else {
 	// FIXME: make this command-line driven
 	const scenarioName = 'indoor'
@@ -25,12 +35,14 @@ if (process.send) {
 
 let activeScenario
 
-function restart(scenarioName) {
+function reset(scenarioName) {
 	activeScenario = reloadScenario(scenarioName)
 	activeScenario.initialState = activeScenario.initial()
+	process.send({action:'reset', data:activeScenario.yardsticks})
 }
 
 function optimizeWeb(scenarioName) {
+	if (!activeScenario) reset(scenarioName);
 	const webCheckin = ({currentState,currentScore,bestState,bestScore,currentTemp,runElapsed,runVariations,roundNumber,roundElapsed,roundVariations}={}) => {
 		activeScenario.initialState = activeScenario.clone ? activeScenario.clone.call(bestState, bestState) : bestState
 		const message = {action:'update', data:{currentScore, bestScore, currentTemp, runElapsed, runVariations, roundNumber, roundElapsed, roundVariations}}
@@ -42,20 +54,11 @@ function optimizeWeb(scenarioName) {
 	}
 	let {state:bestState, score:bestScore, elapsed, variations, rounds} = optimize(activeScenario, webCheckin)
 	activeScenario.initialState = activeScenario.clone ? activeScenario.clone.call(bestState, bestState) : bestState
-	const message = {action:'complete', data:{bestScore, elapsed, variations, rounds}}
+	const message = {action:'update', data:{bestScore, elapsed, variations, rounds, done:true}}
 	if (activeScenario.html) message.data.bestState = activeScenario.html.call(bestState, bestState)
 	process.send(message)
 
 	if (activeScenario.save) exportState(activeScenario.save, bestState, scenarioName)
-}
-
-function sendScenarios() {
-	process.send({
-		action:'scenarios',
-		data:fs.readdirSync('./scenarios', {withFileTypes:true})
-		       .filter(ent => ent.isDirectory())
-		       .map(ent => ent.name)
-	})
 }
 
 function reloadScenario(name) {

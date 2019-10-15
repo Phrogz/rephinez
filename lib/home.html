@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html><head>
+    <title>Rephinez</title>
+    <style>input { width:3em; font-family:monospace }</style>
+</head><body>
+<h1>Rephinez</h1>
+<label id="scenarios">Scenario: <select></select></label>
+<fieldset id="yardsticks">
+    <legend>Yardsticks</legend>
+    <table><thead><tr>
+        <th>Name</th>
+        <th>Weight</th>
+        <th>Scale</th>
+    </tr></thead><tbody>
+    </tbody></table>
+    <button id="go">GO</button>
+</fieldset>
+<div id="output"></div>
+<script>
+const scenarios = document.querySelector('#scenarios select')
+const yardsticks = document.querySelector('#yardsticks tbody')
+scenarios.addEventListener('focus', checkScenarios, false)
+scenarios.addEventListener('change', switchScenario, false)
+go.addEventListener('click', start, false)
+
+checkScenarios();
+
+let scenarioName
+async function checkScenarios() {
+    const response = await fetch('/scenarios')
+    const json = await response.json()
+    let update = false
+    json.forEach((s,i) => {
+        if (!scenarios.options[i] || scenarios.options[i].text!=s) update = true
+    })
+    if (update) {
+        const val = scenarios.value
+        scenarios.options.length = 0
+        json.forEach(s => scenarios.add(new Option(s)))
+        scenarios.value = val
+    }
+}
+
+async function switchScenario() {
+    clearYardsticks()
+    scenarioName = scenarios.value
+    if (scenarioName) {
+        const response = await fetch(`/reset/${scenarioName}`)
+        const json = await response.json()
+        console.log(json)
+        yardsticks.innerHTML = Object.entries(json).map(([name,score]) => `<tr>
+            <th>${name}</th>
+            <td><input name="${name}-weight" value="${score.weight || score}"></td>
+            <td><input name="${name}-scale" value="${score.scale || 1}"></td>
+        </tr>`).join('')
+    }
+}
+
+async function clearYardsticks() {
+    yardsticks.innerHTML = ''
+}
+
+function start() {
+    poke(`/start/${scenarioName}`, 'POST')
+    let peeker = setInterval(peek, 500)
+    async function peek() {
+        const response = await fetch(`/peek`)
+        const json = await response.json()
+        output.innerHTML = json.bestState || ''
+        if (json.done) clearInterval(peeker)
+    }
+}
+
+function poke(url, method='GET') {
+    const xhr = new XMLHttpRequest
+    xhr.open(method, url, true)
+    xhr.send()
+}
+</script>
+</body></html>

@@ -24,6 +24,7 @@ module.exports = {
     vary:    Route.prototype.vary,
     clone:   Route.prototype.duplicate,
     save:    Route.prototype.serialize,
+    html:    Route.prototype.html,
 
     tempStart:              5e2,
     tempFalloffVariations:  1e2,
@@ -37,4 +38,3 @@ module.exports = {
         alternating: { weight:1e9, scale:2    }
     }
 }
-
