@@ -35,8 +35,16 @@ worker.on('message', msg => {
 		case 'update':
 			lastUpdate = msg.data;
 		break;
+		case 'weightResponse':
+			res = responseByMessage.weight
+			if (res) {
+				res.writeHead(200, {'Content-Type':'application/json'})
+				res.end(JSON.stringify(msg.data))
+				delete responseByMessage.weight
+			}
+		break;
 		default:
-			console.log(`Unexpected response from worker '${msg.action}'`)
+			console.log(`Unexpected response from worker`, msg)
 	}
 })
 
@@ -48,16 +56,31 @@ function workerRequest(name, res, fields={}) {
 }
 
 const scenarioURLs = new RegExp('/(?<action>[^/?#]+)/(?<name>[^/?#]+)')
+const weightURLs = new RegExp('^/weight/(?<scenario>[^/?#]+)/(?<yardstick>[^/?#]+)/(?<weight>[^/?#]+)')
 HTTP.createServer(function (req, res) {
+	console.log(req.url)
 	if (req.url=='/') renderHome(res);
 	else if (req.url=='/scenarios') workerRequest('scenarios', res)
 	else if (req.url=='/peek') {
 		res.writeHead(200, {'Content-Type':'application/json'})
 		res.end(JSON.stringify(lastUpdate))
-} else {
+		if (lastUpdate.final) lastUpdate = {}
+	} else if (/^\/weight/.test(req.url)) {
+		const match = weightURLs.exec(req.url)
+		if (match) {
+			workerRequest('weight', res, match.groups)
+		} else {
+			console.log('bad weight received', req.url)
+			res.end()
+		}
+	} else {
 		const match = scenarioURLs.exec(req.url)
 		if (match) workerRequest(match.groups.action, res, {scenario:match.groups.name})
-		else console.log('Web server did not handle', req.url)
+		else {
+			console.log('Web server 404 for', req.url)
+			res.writeHead(404, {"Content-Type": "text/plain"})
+			res.end("404 Not Found\n")
+		}
 	}
 }).listen(8080);
 

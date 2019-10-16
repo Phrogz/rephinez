@@ -1,29 +1,29 @@
 <!DOCTYPE html>
 <html><head>
-    <meta charset='utf-8'>
-    <title>Rephinez</title>
-    <style>
-        * { font-family: sans-serif }
-        input { width:3em; font-family:monospace }
-        #output { width:80%; margin:1em auto }
-        thead th { opacity: 0.6; text-align:left }
-        tbody th { font-weight:normal; text-align:left }
-        .score, .strain { text-align:right }
-        thead .strain { font-weight:bold }
-    </style>
+	<meta charset='utf-8'>
+	<title>Rephinez</title>
+	<style>
+		* { font-family: sans-serif }
+		input { width:3em; font-family:monospace }
+		#output { width:80%; margin:1em auto }
+		thead th { opacity: 0.6; text-align:left }
+		tbody th { font-weight:normal; text-align:left }
+		.score, .strain { text-align:right }
+		thead .strain { font-weight:bold }
+	</style>
 </head><body>
 <h1>Rephinez</h1>
 <label id="scenarios">Scenario: <select></select></label>
 <fieldset id="yardsticks">
-    <legend>Yardsticks</legend>
-    <table><thead><tr>
-        <th>Measure</th>
-        <th class='score'>Score</th>
-        <th>× Weight</th>
-        <th class='strain'>= <output id='total-strain'>-</output></th>
-    </thead><tbody>
-    </tbody></table>
-    <button id="go">GO</button>
+	<legend>Yardsticks</legend>
+	<table><thead><tr>
+		<th>Measure</th>
+		<th class='score'>Score</th>
+		<th>× Weight</th>
+		<th class='strain'>= <output id='total-strain'>-</output></th>
+	</thead><tbody>
+	</tbody></table>
+	<button id="restart">↺</button><button id="go">▶</button>
 </fieldset>
 <div id="output"></div>
 <script>
@@ -32,78 +32,97 @@ const yardsticks = document.querySelector('#yardsticks tbody')
 scenarios.addEventListener('focus', checkScenarios, false)
 scenarios.addEventListener('change', switchScenario, false)
 go.addEventListener('click', start, false)
-
+restart.addEventListener('click', reset, false)
+yardsticks.addEventListener('input', updateWeight, false)
 checkScenarios();
 
 let scenarioName
 async function checkScenarios() {
-    const response = await fetch('/scenarios')
-    const json = await response.json()
-    let update = false
-    json.forEach((s,i) => {
-        if (!scenarios.options[i] || scenarios.options[i].text!=s) update = true
-    })
-    if (update) {
-        const val = scenarios.value
-        scenarios.options.length = 0
-        json.forEach(s => scenarios.add(new Option(s)))
-        scenarios.value = val
-    }
+	const response = await fetch('/scenarios')
+	const json = await response.json()
+	let update = false
+	json.forEach((s,i) => {
+		if (!scenarios.options[i] || scenarios.options[i].text!=s) update = true
+	})
+	if (update) {
+		const val = scenarios.value
+		scenarios.options.length = 0
+		json.forEach(s => scenarios.add(new Option(s)))
+		scenarios.value = val
+	}
 }
 
 async function switchScenario() {
-    clearYardsticks()
-    scenarioName = scenarios.value
-    if (scenarioName) {
-        const response = await fetch(`/reset/${scenarioName}`)
-        const json = await response.json()
-        console.log('reset received', json)
-        showYardsticks(json.yardsticks)
-        updateYardsticks(json.bestScore)
-        output.innerHTML = json.bestStateHTML || ''
-    }
+	clearYardsticks()
+	scenarioName = scenarios.value
+	if (scenarioName) {
+		const response = await fetch(`/reset/${scenarioName}`)
+		const json = await response.json()
+		showYardsticks(json.yardsticks)
+		updateYardsticks(json.bestScore)
+		output.innerHTML = json.bestStateHTML || ''
+	}
 }
 
 function clearYardsticks() {
-    yardsticks.innerHTML = ''
+	yardsticks.innerHTML = ''
 }
 
 function showYardsticks(sticklist) {
-    yardsticks.innerHTML = Object.entries(sticklist).map(([name,score]) => `<tr>
-        <th>${name}</th>
-        <td class='score' id='${name}-score'></td>
-        <td>× <input id='${name}-weight' class='weight' value='${score.weight || score}'></td>
-        <td class='strain'>= <output id='${name}-strain'></output></td>
-    </tr>`).join('')
+	yardsticks.innerHTML = Object.entries(sticklist).map(([name,score]) => `<tr>
+		<th>${name}</th>
+		<td class='score' id='${name}-score'></td>
+		<td>× <input id='${name}-weight' data-yardstick='${name}' class='weight' value='${score.weight || score}'></td>
+		<td class='strain'>= <output id='${name}-strain'></output></td>
+	</tr>`).join('')
 }
 
 function updateYardsticks(score) {
-    Object.entries(score.scores).forEach(([name,score]) => {
-        document.querySelector(`#${name}-score`).innerHTML = score.toFixed(2)
-        document.querySelector(`#${name}-strain`).innerHTML = (score * document.querySelector(`#${name}-weight`).value).toFixed(2)
-    })
-    document.querySelector('#total-strain').innerHTML = score.score.toFixed(2)
+	Object.entries(score.scores).forEach(([name,score]) => {
+		document.querySelector(`#${name}-score`).innerHTML = score.raw.toFixed(2)
+		document.querySelector(`#${name}-strain`).innerHTML = score.weighted.toFixed(2)
+	})
+	document.querySelector('#total-strain').innerHTML = score.score.toFixed(2)
+}
+
+async function reset() {
+	const response = await fetch(`/reset/${scenarioName}`)
+	const json = await response.json()
+	output.innerHTML = json.bestStateHTML || ''
+	if (json.bestScore) updateYardsticks(json.bestScore)
+	if (json.final) {
+		clearInterval(peeker)
+		console.log('annealing done!')
+	}
+}
+
+async function updateWeight(evt) {
+	console.log(evt)
+	const stickName = evt.target.dataset.yardstick
+	const response = await fetch(`/weight/${scenarioName}/${stickName}/${evt.target.value || 0}`)
+	const json = await response.json()
+	if (json.bestScore) updateYardsticks(json.bestScore)
 }
 
 function start() {
-    poke(`/start/${scenarioName}`, 'POST')
-    let peeker = setInterval(peek, 100)
-    async function peek() {
-        const response = await fetch(`/peek`)
-        const json = await response.json()
-        output.innerHTML = json.bestStateHTML || ''
-        if (json.bestScore) updateYardsticks(json.bestScore)
-        if (json.totalProgress>=1) {
-            clearInterval(peeker)
-            console.log('annealing done!')
-        }
-    }
+	poke(`/start/${scenarioName}`, 'POST')
+	let peeker = setInterval(peek, 100)
+	async function peek() {
+		const response = await fetch(`/peek`)
+		const json = await response.json()
+		output.innerHTML = json.bestStateHTML || ''
+		if (json.bestScore) updateYardsticks(json.bestScore)
+		if (json.totalProgress>=1) {
+			clearInterval(peeker)
+			console.log('annealing done!')
+		}
+	}
 }
 
 function poke(url, method='GET') {
-    const xhr = new XMLHttpRequest
-    xhr.open(method, url, true)
-    xhr.send()
+	const xhr = new XMLHttpRequest
+	xhr.open(method, url, true)
+	xhr.send()
 }
 </script>
 </body></html>

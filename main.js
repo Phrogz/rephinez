@@ -7,6 +7,8 @@ let yardsticks
 
 if (process.send) {
 	process.on('message', message => {
+
+		console.log('main.js got request to', message.action)
 		switch (message.action) {
 			case 'reset':    reset(message.scenario); break;
 			case 'start':    optimizeWeb(message.scenario); break;
@@ -36,12 +38,14 @@ if (process.send) {
 let activeScenario
 
 function reset(scenarioName) {
+	for (var i=0;i<5;++i) console.log('-----------------------------------------')
 	activeScenario = reloadScenario(scenarioName)
 	activeScenario.initialState = activeScenario.initial()
+	let html = activeScenario.html && activeScenario.html.call(activeScenario.initialState, activeScenario.initialState)
 	process.send({
 		action:'resetResponse',
 		data:{
-			bestStateHTML:activeScenario.html && activeScenario.html.call(activeScenario.initialState, activeScenario.initialState),
+			bestStateHTML:html,
 			bestScore:measure(activeScenario, activeScenario.initialState),
 			yardsticks:activeScenario.yardsticks,
 		}
@@ -54,11 +58,9 @@ function optimizeWeb(scenarioName) {
 		// Save our best state as where we might pickup later
 		activeScenario.initialState = activeScenario.clone ? activeScenario.clone.call(status.bestState, status.bestState) : status.bestState
 
-		const message = {action:'update', data:status}
-		if (activeScenario.html) {
-			status.currentStateHTML = activeScenario.html.call(status.currentState, status.currentState)
-			status.bestStateHTML    = activeScenario.html.call(status.bestState, status.bestState)
-		}
+		const message = {action:'update', INPROGRESS:true, data:status}
+		status.currentStateHTML = activeScenario.html && status.currentState && activeScenario.html.call(status.currentState, status.currentState)
+		status.bestStateHTML    = activeScenario.html && status.bestState    && activeScenario.html.call(status.bestState, status.bestState)
 		process.send(message)
 	}
 	console.log('starting annealing')
@@ -67,8 +69,9 @@ function optimizeWeb(scenarioName) {
 	// Save our best state as where we might pickup later
 	activeScenario.initialState = activeScenario.clone ? activeScenario.clone.call(result.bestState, result.bestState) : result.bestState
 
-	const message = {action:'update', data:result}
+	const message = {action:'update', INPROGRESS:false, data:result}
 	if (activeScenario.html) result.bestStateHTML = activeScenario.html.call(result.bestState, result.bestState)
+	result.final = true
 	process.send(message)
 
 	if (activeScenario.save) exportState(activeScenario.save, result.bestState, scenarioName)
@@ -110,15 +113,17 @@ function exportState(saveƒ, state, scenarioName) {
 function measure(scenario, state) {
 	const result = {score:0, scores:{}, stats:{}}
 	for (const name in scenario.yardsticks) {
-		const opts = scenario.yardsticks[name]
-		if (opts && opts.weight!==0 && yardsticks[name]) {
-			let {score, stats} = yardsticks[name](state);
-			result.scores[name] = score
-			const weight = typeof(opts)==='number' ? opts : (opts.weight || 1)
-			score *= weight
-			result.score += score * (opts.scale || 1)
-			Object.assign(result.stats, stats)
+		let score = 0
+		let stats = {}
+		const weight = scenario.yardsticks[name]
+		if (weight) {
+			let {score:scoreResult, stats:statsResult} = yardsticks[name](state)
+			score = scoreResult
+			stats = statsResult
 		}
+		result.scores[name] = {raw:score, weighted:score*weight}
+		result.score += score * weight
+		Object.assign(result.stats, stats)
 	}
 	return result
 }
@@ -134,4 +139,12 @@ function iso8601Stamp() {
 	const now = new Date;
 	return [now.getFullYear(), pad(now.getMonth()+1), pad(now.getDate()), 'T', pad(now.getHours()), pad(now.getMinutes()), pad(now.getSeconds())].join('')
 	function pad(n) { return (n<10 ? '0' : '')+n }
+}
+
+function changeWeight(scenarioName, yardstickName, newWeight) {
+	const stick = activeScenario.yardsticks[yardstickName]
+	console.log('changing weight for', yardstickName, stick, 'to', newWeight)
+	activeScenario.yardsticks[yardstickName] = newWeight
+	// TODO: validate that the activeScenario is the scenarioName
+	process.send({action:'weightResponse', data:{bestScore:measure(activeScenario, activeScenario.initialState)}})
 }

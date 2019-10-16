@@ -42,7 +42,7 @@ module.exports = {
     stopAfterVariations:    1e6,
 
     yardsticks: {
-        distance:    { weight:0.1 },
-        alternating: { weight:2 }
+        distance:    0.1,
+        alternating: 2
     }
 }
