@@ -38,27 +38,40 @@ let activeScenario
 function reset(scenarioName) {
 	activeScenario = reloadScenario(scenarioName)
 	activeScenario.initialState = activeScenario.initial()
-	process.send({action:'reset', data:activeScenario.yardsticks})
+	process.send({
+		action:'resetResponse',
+		data:{
+			bestStateHTML:activeScenario.html && activeScenario.html.call(activeScenario.initialState, activeScenario.initialState),
+			bestScore:measure(activeScenario, activeScenario.initialState),
+			yardsticks:activeScenario.yardsticks,
+		}
+	})
 }
 
 function optimizeWeb(scenarioName) {
 	if (!activeScenario) reset(scenarioName);
-	const webCheckin = ({currentState,currentScore,bestState,bestScore,currentTemp,runElapsed,runVariations,roundNumber,roundElapsed,roundVariations}={}) => {
-		activeScenario.initialState = activeScenario.clone ? activeScenario.clone.call(bestState, bestState) : bestState
-		const message = {action:'update', data:{currentScore, bestScore, currentTemp, runElapsed, runVariations, roundNumber, roundElapsed, roundVariations}}
+	const webCheckin = status => {
+		// Save our best state as where we might pickup later
+		activeScenario.initialState = activeScenario.clone ? activeScenario.clone.call(status.bestState, status.bestState) : status.bestState
+
+		const message = {action:'update', data:status}
 		if (activeScenario.html) {
-			message.data.currentState = activeScenario.html.call(currentState, currentState)
-			message.data.bestState    = activeScenario.html.call(bestState, bestState)
+			status.currentStateHTML = activeScenario.html.call(status.currentState, status.currentState)
+			status.bestStateHTML    = activeScenario.html.call(status.bestState, status.bestState)
 		}
 		process.send(message)
 	}
-	let {state:bestState, score:bestScore, elapsed, variations, rounds} = optimize(activeScenario, webCheckin)
-	activeScenario.initialState = activeScenario.clone ? activeScenario.clone.call(bestState, bestState) : bestState
-	const message = {action:'update', data:{bestScore, elapsed, variations, rounds, done:true}}
-	if (activeScenario.html) message.data.bestState = activeScenario.html.call(bestState, bestState)
+	console.log('starting annealing')
+	const result = optimize(activeScenario, webCheckin)
+
+	// Save our best state as where we might pickup later
+	activeScenario.initialState = activeScenario.clone ? activeScenario.clone.call(result.bestState, result.bestState) : result.bestState
+
+	const message = {action:'update', data:result}
+	if (activeScenario.html) result.bestStateHTML = activeScenario.html.call(result.bestState, result.bestState)
 	process.send(message)
 
-	if (activeScenario.save) exportState(activeScenario.save, bestState, scenarioName)
+	if (activeScenario.save) exportState(activeScenario.save, result.bestState, scenarioName)
 }
 
 function reloadScenario(name) {
@@ -94,27 +107,26 @@ function exportState(saveƒ, state, scenarioName) {
 	console.log(`Wrote ${path}`)
 }
 
+function measure(scenario, state) {
+	const result = {score:0, scores:{}, stats:{}}
+	for (const name in scenario.yardsticks) {
+		const opts = scenario.yardsticks[name]
+		if (opts && opts.weight!==0 && yardsticks[name]) {
+			let {score, stats} = yardsticks[name](state);
+			result.scores[name] = score
+			const weight = typeof(opts)==='number' ? opts : (opts.weight || 1)
+			score *= weight
+			result.score += score * (opts.scale || 1)
+			Object.assign(result.stats, stats)
+		}
+	}
+	return result
+}
+
 function optimize(scenario, checkin) {
 	const options = Object.assign({}, scenario)
 	options.checkin = checkin
-	options.measure = state => {
-		const result = {score:0, scores:{}, stats:{}}
-		let totalWeight=0
-		for (const name in scenario.yardsticks) {
-			const opts = scenario.yardsticks[name]
-			if (opts && opts.weight!==0 && yardsticks[name]) {
-				let {score, stats} = yardsticks[name](state);
-				const weight = typeof(opts)==='number' ? opts : (opts.weight || 1)
-				score *= weight
-				result.score += score * (opts.scale || 1)
-				totalWeight += weight
-				result.scores[name] = score
-				Object.assign(result.stats, stats)
-			}
-		}
-		for (const name in scenario.yardsticks) result.scores[name] /= totalWeight
-		return result;
-	}
+	options.measure = state => measure(scenario, state)
 	return annealer(options);
 }
 

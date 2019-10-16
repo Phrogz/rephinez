@@ -2,10 +2,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 308.8 215.4">
 	<defs>
 	<style>
-		circle { stroke:black; stroke-width:1 }
+		circle { stroke:black; stroke-width:0.4 }
 		.meat { fill:#FF54B6 }
 		.veg  { fill:#81FF63 }
-		line { stroke:black; stroke-width:1; marker-end:url(#head) }
+		line { stroke:black; stroke-width:1; marker-end:url(#head); stroke-line-cap:round }
 	</style>
 		<marker id='head' orient='auto' markerWidth='2' markerHeight='4' refX='0.1' refY='2'>
       <path d='M0,0 V4 L2,2 Z' fill='black' />

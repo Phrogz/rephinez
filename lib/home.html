@@ -1,17 +1,27 @@
 <!DOCTYPE html>
 <html><head>
+    <meta charset='utf-8'>
     <title>Rephinez</title>
-    <style>input { width:3em; font-family:monospace }</style>
+    <style>
+        * { font-family: sans-serif }
+        input { width:3em; font-family:monospace }
+        #output { width:80%; margin:1em auto }
+        thead th { opacity: 0.6; text-align:left }
+        tbody th { font-weight:normal; text-align:left }
+        .score, .strain { text-align:right }
+        thead .strain { font-weight:bold }
+    </style>
 </head><body>
 <h1>Rephinez</h1>
 <label id="scenarios">Scenario: <select></select></label>
 <fieldset id="yardsticks">
     <legend>Yardsticks</legend>
     <table><thead><tr>
-        <th>Name</th>
-        <th>Weight</th>
-        <th>Scale</th>
-    </tr></thead><tbody>
+        <th>Measure</th>
+        <th class='score'>Score</th>
+        <th>× Weight</th>
+        <th class='strain'>= <output id='total-strain'>-</output></th>
+    </thead><tbody>
     </tbody></table>
     <button id="go">GO</button>
 </fieldset>
@@ -47,27 +57,46 @@ async function switchScenario() {
     if (scenarioName) {
         const response = await fetch(`/reset/${scenarioName}`)
         const json = await response.json()
-        console.log(json)
-        yardsticks.innerHTML = Object.entries(json).map(([name,score]) => `<tr>
-            <th>${name}</th>
-            <td><input name="${name}-weight" value="${score.weight || score}"></td>
-            <td><input name="${name}-scale" value="${score.scale || 1}"></td>
-        </tr>`).join('')
+        console.log('reset received', json)
+        showYardsticks(json.yardsticks)
+        updateYardsticks(json.bestScore)
+        output.innerHTML = json.bestStateHTML || ''
     }
 }
 
-async function clearYardsticks() {
+function clearYardsticks() {
     yardsticks.innerHTML = ''
+}
+
+function showYardsticks(sticklist) {
+    yardsticks.innerHTML = Object.entries(sticklist).map(([name,score]) => `<tr>
+        <th>${name}</th>
+        <td class='score' id='${name}-score'></td>
+        <td>× <input id='${name}-weight' class='weight' value='${score.weight || score}'></td>
+        <td class='strain'>= <output id='${name}-strain'></output></td>
+    </tr>`).join('')
+}
+
+function updateYardsticks(score) {
+    Object.entries(score.scores).forEach(([name,score]) => {
+        document.querySelector(`#${name}-score`).innerHTML = score.toFixed(2)
+        document.querySelector(`#${name}-strain`).innerHTML = (score * document.querySelector(`#${name}-weight`).value).toFixed(2)
+    })
+    document.querySelector('#total-strain').innerHTML = score.score.toFixed(2)
 }
 
 function start() {
     poke(`/start/${scenarioName}`, 'POST')
-    let peeker = setInterval(peek, 500)
+    let peeker = setInterval(peek, 100)
     async function peek() {
         const response = await fetch(`/peek`)
         const json = await response.json()
-        output.innerHTML = json.bestState || ''
-        if (json.done) clearInterval(peeker)
+        output.innerHTML = json.bestStateHTML || ''
+        if (json.bestScore) updateYardsticks(json.bestScore)
+        if (json.totalProgress>=1) {
+            clearInterval(peeker)
+            console.log('annealing done!')
+        }
     }
 }
 

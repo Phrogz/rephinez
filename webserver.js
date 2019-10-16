@@ -17,7 +17,7 @@ worker.on('message', msg => {
 				delete responseByMessage.scenarios
 			}
 		break;
-		case 'reset':
+		case 'resetResponse':
 			res = responseByMessage.reset
 			if (res) {
 				res.writeHead(200, {'Content-Type':'application/json'})
