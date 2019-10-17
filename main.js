@@ -63,7 +63,7 @@ function optimizeWeb(scenarioName) {
 		// Shrink our payload
 		delete message.data.bestState
 		delete message.data.currentState
-		delete message.data.currentScore
+		// delete message.data.currentScore
 
 		process.send(message)
 	}
@@ -124,7 +124,7 @@ function measure(scenario, state) {
 		let score = 0
 		let stats = {}
 		const weight = scenario.yardsticks[name]
-		if (weight) {
+		if (weight && yardsticks[name]) {
 			let {score:scoreResult, stats:statsResult} = yardsticks[name](state)
 			score = scoreResult
 			stats = statsResult

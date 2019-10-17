@@ -12,6 +12,7 @@
 		thead .strain { font-weight:bold }
 		#output table { border-collapse:collapse; margin:0 auto }
 		#output td { border:1px solid #999; background:#fafafa; padding:0.2em 0.6em }
+		#stats { font-family:monospace; white-space:pre; margin:1em auto; width:80% }
 	</style>
 </head><body>
 <h1>Rephinez</h1>
@@ -28,6 +29,7 @@
 	<button id="restart">↺</button><button id="go">▶</button>
 </fieldset>
 <div id="output"></div>
+<div id="stats"></div>
 <script>
 const scenarios = document.querySelector('#scenarios select')
 const yardsticks = document.querySelector('#yardsticks tbody')
@@ -38,6 +40,7 @@ restart.addEventListener('click', reset, false)
 yardsticks.addEventListener('input', updateWeight, false)
 checkScenarios();
 
+let lastHTML, lastStats
 let scenarioName
 async function checkScenarios() {
 	const response = await fetch('/scenarios')
@@ -56,7 +59,7 @@ async function checkScenarios() {
 
 async function switchScenario() {
 	yardsticks.innerHTML = ''
-	output.innerHTML = ''
+	stats.innerHTML = output.innerHTML = lastHTML = ''
 	scenarioName = scenarios.value
 	if (scenarioName) {
 		const response = await fetch(`/reset/${scenarioName}`)
@@ -93,13 +96,15 @@ function start() {
 	const inputs = Array.from(document.querySelectorAll('input, select, button'))
 	inputs.forEach(el => el.disabled=true)
 	poke(`/start/${scenarioName}`, 'POST')
-	let peeker = setInterval(peek, 100)
+	let peeker = setInterval(peek, 200)
 	async function peek() {
 		const response = await fetch(`/peek`)
 		const json = await response.json()
 		if (json.totalProgress>=1) {
 			clearInterval(peeker)
 			inputs.forEach(el => el.disabled=false)
+		} else {
+			console.log(`Round ${json.roundNumber}`, `${(json.totalProgress*100).toFixed(1)}%`, `${json.currentTemp.toFixed(1)}°`, json.currentScore.score.toFixed(2), json.bestScore.score.toFixed(2))
 		}
 		update(json)
 	}
@@ -112,6 +117,8 @@ function update(json) {
 			document.querySelector(`#${name}-strain`).innerHTML = score.weighted.toFixed(2)
 		})
 		document.querySelector('#total-strain').innerHTML = json.bestScore.score.toFixed(2)
+		const longestStatName = Math.max.apply(Math, Object.keys(json.bestScore.stats).map(s => s.length))
+		stats.innerHTML = Object.entries(json.bestScore.stats).map(([name,str]) => `${name.padEnd(longestStatName, ' ')} : ${str}`).join('\n')
 	}
 	if (json.yardsticks) {
 		Object.entries(json.yardsticks).forEach(([name,weight]) => {
@@ -119,7 +126,7 @@ function update(json) {
 			if (inp && document.activeElement!==inp) inp.value = weight
 		})
 	}
-	if (json.bestStateHTML) output.innerHTML = json.bestStateHTML
+	if (json.bestStateHTML && lastHTML!=json.bestStateHTML) output.innerHTML = lastHTML = json.bestStateHTML
 }
 
 function poke(url, method='GET') {

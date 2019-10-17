@@ -54,7 +54,7 @@ class Schedule {
 	html() {
 		return `<table>${
 			this.rounds.map(r => `<tr>${
-				r.games.map(g => `<td>${g.teams.join(':')}</td>`).join('')
+				r.games.map(g => `<td>${g.teams.map(n=>`T${n}`).join(' ')}</td>`).join('')
 			}</tr>`).join('')
 		}</table>`
 	}
@@ -141,7 +141,7 @@ class Schedule {
 			const lastGameIndexByTeam = {}
 			round.games.forEach((game,i) => {
 				game.teams.forEach(t => {
-					if (lastGameIndexByTeam[t]!=null && (i-lastGameIndexByTeam[t])>=3) result[t] += (i-lastGameIndexByTeam[t]-1)**2;
+					if (lastGameIndexByTeam[t]!=null && (i-lastGameIndexByTeam[t])>=3) result[t] += (i-lastGameIndexByTeam[t]-2)**2;
 					lastGameIndexByTeam[t] = i;
 				})
 			})
@@ -149,9 +149,18 @@ class Schedule {
 		return result
 	}
 
-	previousWeekRepeats() {
+	firstVersusLast() {
 		const result = [...this.blankCount]
-
+		this.rounds.forEach((round,r) => {
+			const gamesPlayedByTeam = [...this.blankCount]
+			round.games.forEach(game => {
+				if (gamesPlayedByTeam[game.t1]===2 && gamesPlayedByTeam[game.t2]===0) result[game.t1]++;
+				if (gamesPlayedByTeam[game.t2]===2 && gamesPlayedByTeam[game.t1]===0) result[game.t2]++;
+				gamesPlayedByTeam[game.t1]++
+				gamesPlayedByTeam[game.t2]++
+			})
+		})
+		return result
 	}
 
 	swapRounds() {
@@ -199,7 +208,7 @@ const sixTeams = Schedule.fromArray(
 module.exports = {
 	name: 'Single-Field Multi-Team Schedule',
 
-	initial: () => eightTeams,
+	initial: () => sixTeams,
 	vary:    Schedule.prototype.swapGamesInAnyRound,
 	save:    s => ({content:s+'', type:'json'}),
 	html:    Schedule.prototype.html,
@@ -207,25 +216,26 @@ module.exports = {
 	clone:   Schedule.prototype.clone,
 
 	/*** controlling the temperature; either falloff time or variations must be supplied (but not both) ******/
-	tempStart:                 200, // temperature to use when starting a round of optimization
-	tempFalloffVariations:    3e2, // number of variations after which it should reach one percent of initial temp
+	tempStart:                50,  // temperature to use when starting a round of optimization
+	tempFalloffVariations:    1e2, // number of variations after which it should reach one percent of initial temp
 
 	/*** how often to peek at the optimization progress ******************************************************/
-	checkinAfterTime:              0.2,
+	checkinAfterTime:         0.2,
 
 	/*** (optional) occasionally restart optimization, starting from the best state **************************/
-	restartAfterVariations:   1e3, // restart a new round after this many variations in the round
+	restartAfterVariations:   5e2, // restart a new round after this many variations in the round
 
 	/*** when to stop and serialize the optimization; at least one of these should be supplied  **************/
-	stopAfterVariations:      1e7, // stop optimization after this many variations
+	stopAfterVariations:      1e6, // stop optimization after this many variations
 
 	// rankings to run, and the default importance of each ranking relative to the others
 	yardsticks: {
-		doubleHeaders:  10,
-		tripleHeaders:  100,
-		evenScheduling: 1,
-		gameGaps:       0.1,
-		multipleByes:   20,
+		multipleByes:    2,
+		doubleHeaders:   0.5,
+		tripleHeaders:   0,
+		evenScheduling:  1,
+		gameGaps:        0,
+		firstVersusLast: 0.3,
 	}
 
 };
