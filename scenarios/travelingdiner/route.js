@@ -23,8 +23,9 @@ class Route {
     }
     html() {
         let html = require('fs').readFileSync(`${__dirname}/diners.svg`, 'utf8')
+        const places = this.route.map( (res, i) => `<circle class="${this.route[i].kind}" cx="${this.route[i].x}" cy="${this.route[i].y}" r="6"/>`).join('')
         const lines = this.route.map( (res, i) => (i ? (`<line x1="${this.route[i-1].x}" y1="${this.route[i-1].y}" x2="${this.route[i].x}" y2="${this.route[i].y}"/>`) : '') ).join('')
-        return html.replace('</svg>', lines+'</svg>')
+        return html.replace('</svg>', places+lines+'</svg>')
     }
 }
 

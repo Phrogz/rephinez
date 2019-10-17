@@ -58,7 +58,7 @@ function workerRequest(name, res, fields={}) {
 const scenarioURLs = new RegExp('/(?<action>[^/?#]+)/(?<name>[^/?#]+)')
 const weightURLs = new RegExp('^/weight/(?<scenario>[^/?#]+)/(?<yardstick>[^/?#]+)/(?<weight>[^/?#]+)')
 HTTP.createServer(function (req, res) {
-	console.log(req.url)
+	// console.log('webserv got request for:', req.url)
 	if (req.url=='/') renderHome(res);
 	else if (req.url=='/scenarios') workerRequest('scenarios', res)
 	else if (req.url=='/peek') {

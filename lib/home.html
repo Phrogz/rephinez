@@ -10,6 +10,8 @@
 		tbody th { font-weight:normal; text-align:left }
 		.score, .strain { text-align:right }
 		thead .strain { font-weight:bold }
+		#output table { border-collapse:collapse; margin:0 auto }
+		#output td { border:1px solid #999; background:#fafafa; padding:0.2em 0.6em }
 	</style>
 </head><body>
 <h1>Rephinez</h1>
@@ -53,19 +55,15 @@ async function checkScenarios() {
 }
 
 async function switchScenario() {
-	clearYardsticks()
+	yardsticks.innerHTML = ''
+	output.innerHTML = ''
 	scenarioName = scenarios.value
 	if (scenarioName) {
 		const response = await fetch(`/reset/${scenarioName}`)
 		const json = await response.json()
 		showYardsticks(json.yardsticks)
-		updateYardsticks(json.bestScore)
-		output.innerHTML = json.bestStateHTML || ''
+		update(json)
 	}
-}
-
-function clearYardsticks() {
-	yardsticks.innerHTML = ''
 }
 
 function showYardsticks(sticklist) {
@@ -77,46 +75,51 @@ function showYardsticks(sticklist) {
 	</tr>`).join('')
 }
 
-function updateYardsticks(score) {
-	Object.entries(score.scores).forEach(([name,score]) => {
-		document.querySelector(`#${name}-score`).innerHTML = score.raw.toFixed(2)
-		document.querySelector(`#${name}-strain`).innerHTML = score.weighted.toFixed(2)
-	})
-	document.querySelector('#total-strain').innerHTML = score.score.toFixed(2)
-}
-
 async function reset() {
 	const response = await fetch(`/reset/${scenarioName}`)
 	const json = await response.json()
-	output.innerHTML = json.bestStateHTML || ''
-	if (json.bestScore) updateYardsticks(json.bestScore)
-	if (json.final) {
-		clearInterval(peeker)
-		console.log('annealing done!')
-	}
+
+	update(json)
 }
 
 async function updateWeight(evt) {
-	console.log(evt)
 	const stickName = evt.target.dataset.yardstick
 	const response = await fetch(`/weight/${scenarioName}/${stickName}/${evt.target.value || 0}`)
 	const json = await response.json()
-	if (json.bestScore) updateYardsticks(json.bestScore)
+	update(json)
 }
 
 function start() {
+	const inputs = Array.from(document.querySelectorAll('input, select, button'))
+	inputs.forEach(el => el.disabled=true)
 	poke(`/start/${scenarioName}`, 'POST')
 	let peeker = setInterval(peek, 100)
 	async function peek() {
 		const response = await fetch(`/peek`)
 		const json = await response.json()
-		output.innerHTML = json.bestStateHTML || ''
-		if (json.bestScore) updateYardsticks(json.bestScore)
 		if (json.totalProgress>=1) {
 			clearInterval(peeker)
-			console.log('annealing done!')
+			inputs.forEach(el => el.disabled=false)
 		}
+		update(json)
 	}
+}
+
+function update(json) {
+	if (json.bestScore) {
+		Object.entries(json.bestScore.scores).forEach(([name,score]) => {
+			document.querySelector(`#${name}-score`).innerHTML = score.raw.toFixed(2)
+			document.querySelector(`#${name}-strain`).innerHTML = score.weighted.toFixed(2)
+		})
+		document.querySelector('#total-strain').innerHTML = json.bestScore.score.toFixed(2)
+	}
+	if (json.yardsticks) {
+		Object.entries(json.yardsticks).forEach(([name,weight]) => {
+			const inp = document.querySelector(`#${name}-weight`)
+			if (inp && document.activeElement!==inp) inp.value = weight
+		})
+	}
+	if (json.bestStateHTML) output.innerHTML = json.bestStateHTML
 }
 
 function poke(url, method='GET') {

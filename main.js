@@ -7,8 +7,7 @@ let yardsticks
 
 if (process.send) {
 	process.on('message', message => {
-
-		console.log('main.js got request to', message.action)
+		console.log('main.js got request for:', message.action)
 		switch (message.action) {
 			case 'reset':    reset(message.scenario); break;
 			case 'start':    optimizeWeb(message.scenario); break;
@@ -38,7 +37,6 @@ if (process.send) {
 let activeScenario
 
 function reset(scenarioName) {
-	for (var i=0;i<5;++i) console.log('-----------------------------------------')
 	activeScenario = reloadScenario(scenarioName)
 	activeScenario.initialState = activeScenario.initial()
 	let html = activeScenario.html && activeScenario.html.call(activeScenario.initialState, activeScenario.initialState)
@@ -58,23 +56,34 @@ function optimizeWeb(scenarioName) {
 		// Save our best state as where we might pickup later
 		activeScenario.initialState = activeScenario.clone ? activeScenario.clone.call(status.bestState, status.bestState) : status.bestState
 
-		const message = {action:'update', INPROGRESS:true, data:status}
-		status.currentStateHTML = activeScenario.html && status.currentState && activeScenario.html.call(status.currentState, status.currentState)
-		status.bestStateHTML    = activeScenario.html && status.bestState    && activeScenario.html.call(status.bestState, status.bestState)
+		const message = {action:'update', data:Object.assign({}, status)}
+		// message.data.currentStateHTML = activeScenario.html && status.currentState && activeScenario.html.call(status.currentState, status.currentState)
+		message.data.bestStateHTML    = activeScenario.html && status.bestState    && activeScenario.html.call(status.bestState, status.bestState)
+
+		// Shrink our payload
+		delete message.data.bestState
+		delete message.data.currentState
+		delete message.data.currentScore
+
 		process.send(message)
 	}
 	console.log('starting annealing')
-	const result = optimize(activeScenario, webCheckin)
+	const status = optimize(activeScenario, webCheckin)
 
-	// Save our best state as where we might pickup later
-	activeScenario.initialState = activeScenario.clone ? activeScenario.clone.call(result.bestState, result.bestState) : result.bestState
+	const message = {action:'update', data:Object.assign({}, status)}
+	message.data.final = true
+	if (activeScenario.html) message.data.bestStateHTML = activeScenario.html.call(status.bestState, status.bestState)
 
-	const message = {action:'update', INPROGRESS:false, data:result}
-	if (activeScenario.html) result.bestStateHTML = activeScenario.html.call(result.bestState, result.bestState)
-	result.final = true
+	// Shrink our payload
+	delete message.data.bestState
+	delete message.data.currentState
+
 	process.send(message)
 
-	if (activeScenario.save) exportState(activeScenario.save, result.bestState, scenarioName)
+	// Save our best state as where we might pickup later
+	activeScenario.initialState = activeScenario.clone ? activeScenario.clone.call(status.bestState, status.bestState) : status.bestState
+
+	if (activeScenario.save) exportState(activeScenario.save, status.bestState, scenarioName)
 }
 
 function reloadScenario(name) {
@@ -89,7 +98,6 @@ function reloadScenario(name) {
 			const name = path.basename(file, path.extname(file))
 			yardsticks[name] = rerequire(`${dir}/${file}`)
 		});
-
 		return rerequire(`${scenarioDir}/scenario`)
 	}
 }
