@@ -6,7 +6,7 @@ const restaurants = [
 	{kind:"veg",  x:  6.5, y: 76.5},
 	{kind:"meat", x: 47.8, y: 94.5},
 	{kind:"meat", x:252.0, y:  6.5},
-	{kind:"meat", x:214.9, y: 34.0},
+	{kind:"veg", x:214.9, y: 34.0},
 	{kind:"veg",  x:302.3, y: 47.2},
 	{kind:"veg",  x:260.4, y: 70.6},
 	{kind:"veg",  x:125.1, y:149.0},
@@ -34,15 +34,15 @@ module.exports = {
     save:    Route.prototype.serialize,
     html:    Route.prototype.html,
 
-    tempStart:              1000,
-    tempFalloffVariations:  400,
+    tempStart:              100,
+    tempFalloffVariations:  50,
 
     checkinAfterTime:       0.2,
-    restartAfterVariations: 1e3,
-    stopAfterVariations:    1e6,
+    restartAfterVariations: 1e2,
+    stopAfterVariations:    2e6,
 
     yardsticks: {
-        travelDistance:    0.1,
-        alternatingFoods:  10
+        "Total Distance": 0.1,
+        "Repeat Meals":   10
     }
 }

@@ -66,7 +66,7 @@ HTTP.createServer(function (req, res) {
 		res.end(JSON.stringify(lastUpdate))
 		if (lastUpdate.final) lastUpdate = {}
 	} else if (/^\/weight/.test(req.url)) {
-		const match = weightURLs.exec(req.url)
+		const match = weightURLs.exec(unescape(req.url))
 		if (match) {
 			workerRequest('weight', res, match.groups)
 		} else {

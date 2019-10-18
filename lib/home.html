@@ -7,7 +7,8 @@
 		input { width:3em; font-family:monospace }
 		#output { width:80%; margin:1em auto }
 		thead th { opacity: 0.6; text-align:left }
-		tbody th { font-weight:normal; text-align:left }
+		tbody th { font-weight:normal; text-align:left; padding-right:0.5em }
+		td.weight { text-align:center }
 		.score, .strain { text-align:right }
 		thead .strain { font-weight:bold }
 		#output table { border-collapse:collapse; margin:0 auto }
@@ -22,8 +23,8 @@
 	<table><thead><tr>
 		<th>Measure</th>
 		<th class='score'>Score</th>
-		<th>× Weight</th>
-		<th class='strain'>= <output id='total-strain'>-</output></th>
+		<th>× Weight =</th>
+		<th id='total-strain' class='strain'>-</th>
 	</thead><tbody>
 	</tbody></table>
 	<button id="restart">↺</button><button id="go">▶</button>
@@ -72,9 +73,9 @@ async function switchScenario() {
 function showYardsticks(sticklist) {
 	yardsticks.innerHTML = Object.entries(sticklist).map(([name,score]) => `<tr>
 		<th>${name}</th>
-		<td class='score' id='${name}-score'></td>
-		<td>× <input id='${name}-weight' data-yardstick='${name}' class='weight' value='${score.weight || score}'></td>
-		<td class='strain'>= <output id='${name}-strain'></output></td>
+		<td data-yardstick='${name}' class='score'></td>
+		<td class='weight'><input data-yardstick='${name}' class='weight' value='${score}'></td>
+		<td data-yardstick='${name}' class='strain'></td>
 	</tr>`).join('')
 }
 
@@ -104,7 +105,7 @@ function start() {
 			clearInterval(peeker)
 			inputs.forEach(el => el.disabled=false)
 		} else {
-			console.log(`Round ${json.roundNumber}`, `${(json.totalProgress*100).toFixed(1)}%`, `${json.currentTemp.toFixed(1)}°`, json.currentScore.score.toFixed(2), json.bestScore.score.toFixed(2))
+			console.log(`Round ${json.roundNumber}`, `${(json.totalProgress*100).toFixed(1)}%`, `${(json.currentTemp||0).toFixed(1)}°`, json.currentScore.score.toFixed(2), (json.bestScore ? json.bestScore.score : -1).toFixed(2))
 		}
 		update(json)
 	}
@@ -113,8 +114,8 @@ function start() {
 function update(json) {
 	if (json.bestScore) {
 		Object.entries(json.bestScore.scores).forEach(([name,score]) => {
-			document.querySelector(`#${name}-score`).innerHTML = score.raw.toFixed(2)
-			document.querySelector(`#${name}-strain`).innerHTML = score.weighted.toFixed(2)
+			document.querySelector(`[data-yardstick="${name}"].score`).innerHTML = score.raw.toFixed(2)
+			document.querySelector(`[data-yardstick="${name}"].strain`).innerHTML = score.weighted.toFixed(2)
 		})
 		document.querySelector('#total-strain').innerHTML = json.bestScore.score.toFixed(2)
 		const longestStatName = Math.max.apply(Math, Object.keys(json.bestScore.stats).map(s => s.length))
@@ -122,7 +123,7 @@ function update(json) {
 	}
 	if (json.yardsticks) {
 		Object.entries(json.yardsticks).forEach(([name,weight]) => {
-			const inp = document.querySelector(`#${name}-weight`)
+			const inp = document.querySelector(`[data-yardstick="${name}"].weight`)
 			if (inp && document.activeElement!==inp) inp.value = weight
 		})
 	}
