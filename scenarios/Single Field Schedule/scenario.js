@@ -230,12 +230,12 @@ module.exports = {
 
 	// rankings to run, and the default importance of each ranking relative to the others
 	yardsticks: {
-		multipleByes:    2,
-		doubleHeaders:   0.5,
-		tripleHeaders:   0,
-		evenScheduling:  1,
-		gameGaps:        0,
-		firstVersusLast: 0.3,
+		"Multiple Byes":    2,
+		"Double Headers":   0.5,
+		"Triple Headers":   0,
+		"Even Scheduling":  1,
+		"Game Gaps":        0,
+		"First vs Last":    0.3,
 	}
 
 };

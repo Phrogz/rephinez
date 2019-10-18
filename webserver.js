@@ -58,7 +58,8 @@ function workerRequest(name, res, fields={}) {
 const scenarioURLs = new RegExp('/(?<action>[^/?#]+)/(?<name>[^/?#]+)')
 const weightURLs = new RegExp('^/weight/(?<scenario>[^/?#]+)/(?<yardstick>[^/?#]+)/(?<weight>[^/?#]+)')
 HTTP.createServer(function (req, res) {
-	// console.log('webserv got request for:', req.url)
+	req.url = unescape(req.url)
+	console.log('webserv got request for:', req.url)
 	if (req.url=='/') renderHome(res);
 	else if (req.url=='/scenarios') workerRequest('scenarios', res)
 	else if (req.url=='/peek') {
@@ -66,7 +67,7 @@ HTTP.createServer(function (req, res) {
 		res.end(JSON.stringify(lastUpdate))
 		if (lastUpdate.final) lastUpdate = {}
 	} else if (/^\/weight/.test(req.url)) {
-		const match = weightURLs.exec(unescape(req.url))
+		const match = weightURLs.exec(req.url)
 		if (match) {
 			workerRequest('weight', res, match.groups)
 		} else {

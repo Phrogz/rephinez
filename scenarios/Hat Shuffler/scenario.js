@@ -21,22 +21,24 @@ module.exports = {
     tempStart: 5,
     tempFalloffVariations: 100,
 
-    stopAfterVariations:    1e5,
+    restartAfterVariations: 2e2,
+
+    stopAfterVariations:    1e4,
     // stopAfterScore:    9,
-    restartAfterVariations: 5e2,
     restartAfterScore:      18,
     // restartAfterTemperature: 0.001,
-    checkinAfterVariations: 5e3,
+    // checkinAfterVariations: 5e3,
+	checkinAfterTime:       0.2,
 
     // rankings to run, and how important each ranking is relative to the others
     yardsticks: {
-        distributedWomen:      0, // not needed; women are pre-distributed and kept that way by gender-based swaps
-        distributedGiants:     4,
-        distributedSpeed:      2,
-        distributedXP:         1,
-        teamsAreFair:          3,
-        playerExposure:        6,
-        distributedScheduling: 4,
+        "Distributed Women":      0, // not needed; women are pre-distributed and kept that way by gender-based swaps
+        "Distributed Giants":     4,
+        "Distributed Speed":      2,
+        "Distributed XP":         1,
+        "Fair Teams":             3,
+        "Player Exposure":        6,
+        "Distributed Scheduling": 4,
     }
 }
 

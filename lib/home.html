@@ -105,7 +105,7 @@ function start() {
 			clearInterval(peeker)
 			inputs.forEach(el => el.disabled=false)
 		} else {
-			console.log(`Round ${json.roundNumber}`, `${(json.totalProgress*100).toFixed(1)}%`, `${(json.currentTemp||0).toFixed(1)}°`, json.currentScore.score.toFixed(2), (json.bestScore ? json.bestScore.score : -1).toFixed(2))
+			console.log(`Round ${json.roundNumber}`, `${(json.totalProgress*100).toFixed(1)}%`, `${(json.currentTemp||0).toFixed(1)}°`, (json.currentScore ? json.currentScore.score : -1).toFixed(2), (json.bestScore ? json.bestScore.score : -1).toFixed(2))
 		}
 		update(json)
 	}

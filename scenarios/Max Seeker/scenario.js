@@ -10,6 +10,8 @@ module.exports = {
     tempStart:              50,
     tempFalloffVariations:  500,
 
+	checkinAfterTime:         0.2,
+
     restartAfterVariations: 1e3,
     stopAfterVariations:    1e5,
 
