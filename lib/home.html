@@ -12,34 +12,72 @@
 		.score, .strain { text-align:right }
 		thead .strain { font-weight:bold }
 		#output table { border-collapse:collapse; margin:0 auto }
-		#output td { border:1px solid #999; background:#fafafa; padding:0.2em 0.6em }
+		#output th, #output td { border:1px solid #999; background:#fafafa; padding:0.2em 0.6em }
 		#stats { font-family:monospace; white-space:pre; margin:1em auto; width:80% }
+		#simparams, #yardsticks, #progress { display:none }
+		#simparams input { width:6em }
 	</style>
 </head><body>
-<h1>Rephinez</h1>
 <label id="scenarios">Scenario: <select></select></label>
-<fieldset id="yardsticks">
-	<legend>Yardsticks</legend>
-	<table><thead><tr>
-		<th>Measure</th>
-		<th class='score'>Score</th>
-		<th>× Weight =</th>
-		<th id='total-strain' class='strain'>-</th>
-	</thead><tbody>
-	</tbody></table>
-	<button id="restart">↺</button><button id="go">▶</button>
-</fieldset>
+<button id="restart">↺</button><button id="go">▶</button>
+<table id="yardsticks"><thead><tr>
+	<th>Measure</th>
+	<th class='score'>Score</th>
+	<th>× Weight =</th>
+	<th id='total-strain' class='strain'>-</th>
+</thead><tbody></tbody></table>
+<table id="simparams"><tbody>
+	<tr><th title="Temperature to start each round at">Temp Start</th><td><input name="tempstart" type="number" min="0"></td></tr>
+	<tr><th title="How long does it take to fall to 1% of the initial temperature?">Temp Falloff</th><td><input name="tempfalloff" type="number" step="1" min="1"><select name="tempfalloffkind"><option>seconds</option><option>variations</option></select></td></tr>
+	<tr><th title="When should the simulation take the best state and reheat it?">Restart After</th><td><input name="restartafter" type="number"><select name="restartafterkind"><option>seconds</option><option>variations</option><option>score</option><option>temp</option></select></td></tr>
+	<tr><th title="When should the simulation stop and let you re-assess parameters?">Stop After</th><td><input name="stopafter" type="number"><select name="stopafterkind"><option>seconds</option><option>variations</option><option>rounds</option><option>score</option></select></td></tr>
+	<tr><th title="How often should the current best state be sent?">Update Every</th><td><input name="updateafter" type="number"><select name="updateafterkind"><option>seconds</option><option>variations</option></select></td></tr>
+</tbody></table>
+<div id="progress">
+	<label>Progress <output id="progressPercent">0</output>%</label>
+	<label>Temp <output id="progressTemp">0</output>°</label>
+	<label>Rounds <output id="progressRound">0</output></label>
+	<label>Variations <output id="progressVariations">0</output></label>
+</div>
 <div id="output"></div>
 <div id="stats"></div>
 <script>
 const scenarios = document.querySelector('#scenarios select')
-const yardsticks = document.querySelector('#yardsticks tbody')
+const yardstickContent = document.querySelector('#yardsticks tbody')
 scenarios.addEventListener('focus', checkScenarios, false)
 scenarios.addEventListener('change', switchScenario, false)
 go.addEventListener('click', start, false)
 restart.addEventListener('click', reset, false)
 yardsticks.addEventListener('input', updateWeight, false)
-checkScenarios();
+
+Array.from(document.querySelectorAll('#simparams input')).forEach( inp => inp.addEventListener('input', updateParam, false))
+Array.from(document.querySelectorAll('#simparams select')).forEach( inp => inp.addEventListener('input', updateParamKind, false))
+
+checkScenarios()
+
+const paramMap = {
+	tempfalloff:{
+		seconds:"tempFalloffTime",
+		variations:"tempFalloffVariations",
+	},
+	restartafter:{
+		seconds:"restartAfterTime",
+		variations:"restartAfterVariations",
+		score:"restartAfterScore",
+		temp:"restartAfterTemp",
+	},
+	stopafter:{
+		seconds:"stopAfterTime",
+		variations:"stopAfterVariations",
+		score:"stopAfterScore",
+		rounds:"stopAfterRounds",
+	},
+	updateafter:{
+		seconds:"checkinAfterTime",
+		variations:"checkinAfterVariations",
+		score:"checkinAfterScore",
+	}
+};
 
 let lastHTML, lastStats
 let scenarioName
@@ -59,19 +97,24 @@ async function checkScenarios() {
 }
 
 async function switchScenario() {
-	yardsticks.innerHTML = ''
+	yardstickContent.innerHTML = ''
+	yardsticks.style.display = 'none'
+	simparams.style.display = 'none'
+
 	stats.innerHTML = output.innerHTML = lastHTML = ''
 	scenarioName = scenarios.value
 	if (scenarioName) {
+		yardsticks.style.display = 'table'
+		simparams.style.display = 'table'
 		const response = await fetch(`/reset/${scenarioName}`)
 		const json = await response.json()
-		showYardsticks(json.yardsticks)
+		showYardsticks(json.scenario.yardsticks)
 		update(json)
 	}
 }
 
 function showYardsticks(sticklist) {
-	yardsticks.innerHTML = Object.entries(sticklist).map(([name,score]) => `<tr>
+	yardstickContent.innerHTML = Object.entries(sticklist).map(([name,score]) => `<tr>
 		<th>${name}</th>
 		<td data-yardstick='${name}' class='score'></td>
 		<td class='weight'><input data-yardstick='${name}' class='weight' value='${score}'></td>
@@ -104,8 +147,13 @@ function start() {
 		if (json.totalProgress>=1) {
 			clearInterval(peeker)
 			inputs.forEach(el => el.disabled=false)
+			progress.style.display = ''
 		} else {
-			console.log(`Round ${json.roundNumber}`, `${(json.totalProgress*100).toFixed(1)}%`, `${(json.currentTemp||0).toFixed(1)}°`, (json.currentScore ? json.currentScore.score : -1).toFixed(2), (json.bestScore ? json.bestScore.score : -1).toFixed(2))
+			progressRound.value = json.roundNumber
+			progressPercent.value = (json.totalProgress*100).toFixed(1)
+			progressTemp.value = json.currentTemp ? json.currentTemp.toFixed(1) : '-'
+			progressVariations.value = json.totalVariations
+			progress.style.display = 'block'
 		}
 		update(json)
 	}
@@ -121,13 +169,51 @@ function update(json) {
 		const longestStatName = Math.max.apply(Math, Object.keys(json.bestScore.stats).map(s => s.length))
 		stats.innerHTML = Object.entries(json.bestScore.stats).map(([name,str]) => `${name.padEnd(longestStatName, ' ')} : ${str}`).join('\n')
 	}
-	if (json.yardsticks) {
-		Object.entries(json.yardsticks).forEach(([name,weight]) => {
-			const inp = document.querySelector(`[data-yardstick="${name}"].weight`)
-			if (inp && document.activeElement!==inp) inp.value = weight
+	const scen = json.scenario
+	if (scen) {
+		console.log(scen)
+		if (scen.yardsticks) {
+			Object.entries(scen.yardsticks).forEach(([name,weight]) => {
+				const inp = document.querySelector(`[data-yardstick="${name}"].weight`)
+				if (inp && document.activeElement!==inp) inp.value = weight
+			})
+		}
+		document.querySelector('input[name="tempstart"]').value = scen.tempStart;
+
+		Object.entries(paramMap).forEach(([field, options]) => {
+			Object.entries(options).forEach(([kind, name]) => {
+				if (name in scen) {
+					document.querySelector(`select[name="${field}kind"]`).value = kind;
+					document.querySelector(`input[name="${field}"]`).value = scen[name];
+				}
+			})
 		})
 	}
 	if (json.bestStateHTML && lastHTML!=json.bestStateHTML) output.innerHTML = lastHTML = json.bestStateHTML
+}
+
+function updateParamFor(field) {
+	const value = document.querySelector(`input[name="${field}"]`).value
+	let param
+	if (field==='tempstart') {
+		param = 'tempStart'
+	} else {
+		const kind = document.querySelector(`select[name="${field}kind"]`).value
+		param = paramMap[field][kind]
+	}
+	poke(`/param/${scenarioName}/${param}/${value}`, 'POST')
+}
+
+function updateParam(evt) {
+	if (evt.target.value>=1e3) {
+		const scientific = (evt.target.value*1).toExponential(0)
+		if (evt.target.value*1===scientific*1) evt.target.value=scientific.replace('+','')
+	}
+	updateParamFor(evt.target.name)
+}
+
+function updateParamKind(evt) {
+	updateParamFor(evt.target.name.replace('kind',''))
 }
 
 function poke(url, method='GET') {

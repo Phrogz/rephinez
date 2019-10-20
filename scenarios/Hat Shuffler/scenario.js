@@ -16,6 +16,7 @@ module.exports = {
     vary:  Season.prototype.swizzle,
     save:  Season.prototype.toCSV,
     load:  Season.fromCSV,
+    html:  Season.prototype.html,
     clone: Season.prototype.duplicate,
 
     tempStart: 5,

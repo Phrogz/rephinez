@@ -7,22 +7,18 @@ let yardsticks
 
 if (process.send) {
 	process.on('message', message => {
-		console.log('main.js got request for:', message.action)
 		switch (message.action) {
-			case 'reset':    reset(message.scenario); break;
-			case 'start':    optimizeWeb(message.scenario); break;
-			case 'weight':   changeWeight(message.scenario, message.yardstick, message.weight); break;
 			case 'scenarios':
 				process.send({
 					action:'scenarios',
-					data:fs.readdirSync('./scenarios', {withFileTypes:true})
-							 .filter(ent => ent.isDirectory())
-							 .map(ent => ent.name)
+					data:fs.readdirSync('./scenarios', {withFileTypes:true}).filter(ent => ent.isDirectory()).map(ent => ent.name)
 				})
 			break;
-			case 'yardsticks':
-				// TODO: validate that the message.scenario matches the current scenario
-			break;
+			case 'reset':  reset(message.data[0]); break;
+			case 'start':  optimizeWeb(message.data[0]); break;
+			case 'weight': changeWeight.apply(0, message.data); break;
+			case 'param':  changeParam.apply(0, message.data); break;
+			default:       process.send({action:'404', field:message.action})
 		}
 	})
 } else {
@@ -45,7 +41,7 @@ function reset(scenarioName) {
 		data:{
 			bestStateHTML:html,
 			bestScore:measure(activeScenario, activeScenario.initialState),
-			yardsticks:activeScenario.yardsticks,
+			scenario:activeScenario,
 		}
 	})
 }
@@ -150,9 +146,49 @@ function iso8601Stamp() {
 }
 
 function changeWeight(scenarioName, yardstickName, newWeight) {
-	const stick = activeScenario.yardsticks[yardstickName]
-	console.log('changing weight for', yardstickName, stick, 'to', newWeight)
-	activeScenario.yardsticks[yardstickName] = newWeight
 	// TODO: validate that the activeScenario is the scenarioName
+	activeScenario.yardsticks[yardstickName] = newWeight
 	process.send({action:'weightResponse', data:{bestScore:measure(activeScenario, activeScenario.initialState)}})
+}
+
+function changeParam(scenarioName, param, value) {
+	// TODO: validate that the activeScenario is the scenarioName
+	console.log(`Changing ${scenarioName} ${param} to ${value}`)
+	switch (param) {
+		case 'tempFalloffTime':
+		case 'tempFalloffVariations':
+			delete activeScenario.tempFalloffTime
+			delete activeScenario.tempFalloffVariations
+		break;
+
+		case 'stopAfterTime':
+		case 'stopAfterVariations':
+		case 'stopAfterScore':
+		case 'stopAfterRounds':
+			delete activeScenario.stopAfterTime
+			delete activeScenario.stopAfterVariations
+			delete activeScenario.stopAfterScore
+			delete activeScenario.stopAfterRounds
+		break;
+
+		case 'restartAfterTime':
+		case 'restartAfterVariations':
+		case 'restartAfterScore':
+		case 'restartAfterTemperature':
+			delete activeScenario.restartAfterTime
+			delete activeScenario.restartAfterVariations
+			delete activeScenario.restartAfterScore
+			delete activeScenario.restartAfterTemperature
+		break;
+
+		case 'checkinAfterTime':
+		case 'checkinAfterVariations':
+		case 'checkinAfterScore':
+			delete activeScenario.checkinAfterTime
+			delete activeScenario.checkinAfterVariations
+			delete activeScenario.checkinAfterScore
+		break;
+	}
+	activeScenario[param] = value*1
+	process.send({action:'paramResponse'})
 }

@@ -43,49 +43,47 @@ worker.on('message', msg => {
 				delete responseByMessage.weight
 			}
 		break;
+		case 'paramResponse':
+			res = responseByMessage.param
+			if (res) {
+				res.writeHead(200, {'Content-Type':'application/json'})
+				res.end('true')
+				delete responseByMessage.weight
+			}
+		break;
+		case '404':
+			res = responseByMessage[msg.field]
+			if (res) {
+				console.log('404')
+				res.writeHead(404, {'Content-Type':'text/plain'})
+				res.end(`No action to handle ${msg.field}`)
+				delete responseByMessage[msg.field]
+			}
+			break;
 		default:
 			console.log(`Unexpected response from worker`, msg)
 	}
 })
 
-function workerRequest(name, res, fields={}) {
-	if (responseByMessage[name]) responseByMessage[name].end()
+function workerRequest(res, parts) {
+	const name = parts.shift()
+	if (responseByMessage[name]) responseByMessage[name].end("(superceded)")
 	responseByMessage[name] = res
-	Object.assign(fields, {action:name})
-	worker.send(fields)
+	worker.send({action:name, data:parts})
 }
 
-const scenarioURLs = new RegExp('/(?<action>[^/?#]+)/(?<name>[^/?#]+)')
-const weightURLs = new RegExp('^/weight/(?<scenario>[^/?#]+)/(?<yardstick>[^/?#]+)/(?<weight>[^/?#]+)')
 HTTP.createServer(function (req, res) {
-	req.url = unescape(req.url)
-	console.log('webserv got request for:', req.url)
-	if (req.url=='/') renderHome(res);
-	else if (req.url=='/scenarios') workerRequest('scenarios', res)
-	else if (req.url=='/peek') {
+	console.log('Request:', unescape(req.url))
+	if (req.url==='/') {
+		res.writeHead(200, {'Content-Type': 'text/html'})
+		res.end(require('fs').readFileSync('lib/home.html', 'utf8'))
+	} else if (req.url==='/peek') {
 		res.writeHead(200, {'Content-Type':'application/json'})
 		res.end(JSON.stringify(lastUpdate))
 		if (lastUpdate.final) lastUpdate = {}
-	} else if (/^\/weight/.test(req.url)) {
-		const match = weightURLs.exec(req.url)
-		if (match) {
-			workerRequest('weight', res, match.groups)
-		} else {
-			console.log('bad weight received', req.url)
-			res.end()
-		}
 	} else {
-		const match = scenarioURLs.exec(req.url)
-		if (match) workerRequest(match.groups.action, res, {scenario:match.groups.name})
-		else {
-			console.log('Web server 404 for', req.url)
-			res.writeHead(404, {"Content-Type": "text/plain"})
-			res.end("404 Not Found\n")
-		}
+		const parts = req.url.split('/').map(unescape)
+		parts.shift() // Throw away the leading ''
+		workerRequest(res, parts)
 	}
 }).listen(8080);
-
-function renderHome(res) {
-	res.writeHead(200, {'Content-Type': 'text/html'})
-	res.end(require('fs').readFileSync('lib/home.html', 'utf8'))
-}

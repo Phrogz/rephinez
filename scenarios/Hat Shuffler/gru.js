@@ -187,6 +187,21 @@ class Season {
 		})
 		return new Season(rounds)
 	}
+
+	html() {
+		const teamNameByTeam = new Map()
+		this.rounds.forEach(r => r.teams.forEach((t,i) => teamNameByTeam.set(t,TeamNames[i])))
+		return `<table><thead><tr><th>Player</th>${
+			this.rounds.map( (r,i) => `<th>Week ${i+1}</th>`).join('')
+		}</tr></thead><tbody>${
+			this.players.partition(p=>p.male).map(players => {
+				return players.map(p => `<tr><th>${p.name}</th>${
+					this.rounds.map(r => `<td>${teamNameByTeam.get(r.teamForPlayer(p))}</td>`).join('')
+				}</tr>`).join('')
+			}).join('')
+		}</tbody><table>`
+	}
+
 	toString() { return this.rounds.map((r,i)=>`Round #${i+1}\n${r+''}\n`).join('\n')}
 }
 
