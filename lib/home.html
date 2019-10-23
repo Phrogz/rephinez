@@ -3,7 +3,8 @@
 	<meta charset='utf-8'>
 	<title>Rephinez</title>
 	<style>
-		* { font-family: sans-serif }
+		* { font-family:sans-serif; box-sizing:border-box }
+		html, body { min-height:100%; margin:0; padding:0 }
 		input { width:3em; font-family:monospace }
 		#output { width:80%; margin:1em auto }
 		thead th { opacity: 0.6; text-align:left }
@@ -11,11 +12,16 @@
 		td.weight { text-align:center }
 		.score, .strain { text-align:right }
 		thead .strain { font-weight:bold }
-		#output table { border-collapse:collapse; margin:0 auto }
+		#output table,
+		#stats table { border-collapse:collapse; margin:0 auto }
 		#output th, #output td { border:1px solid #999; background:#fafafa; padding:0.2em 0.6em }
 		#stats { font-family:monospace; white-space:pre; margin:1em auto; width:80% }
 		#simparams, #yardsticks, #progress { display:none }
+		body.annealing #progress { display:block }
 		#simparams input { width:6em }
+		#progress { position:absolute; height:2em; line-height:2em; bottom:0; left:0; width:100%; background:#eee; font-size:90%; border-top:1px solid #999 }
+		#progressbar { position:absolute; height:2em; background:#ceb; width:0%; left:0; top:0; z-index:0; border-right:1px solid #999 }
+		label { position:relative; display:inline-block; z-index:2; padding:0 1em; width:20% }
 	</style>
 </head><body>
 <label id="scenarios">Scenario: <select></select></label>
@@ -38,6 +44,7 @@
 	<label>Temp <output id="progressTemp">0</output>°</label>
 	<label>Rounds <output id="progressRound">0</output></label>
 	<label>Variations <output id="progressVariations">0</output></label>
+	<span id="progressbar"></span>
 </div>
 <div id="output"></div>
 <div id="stats"></div>
@@ -97,6 +104,7 @@ async function checkScenarios() {
 }
 
 async function switchScenario() {
+	document.body.classList.add('noscenario')
 	yardstickContent.innerHTML = ''
 	yardsticks.style.display = 'none'
 	simparams.style.display = 'none'
@@ -104,6 +112,7 @@ async function switchScenario() {
 	stats.innerHTML = output.innerHTML = lastHTML = ''
 	scenarioName = scenarios.value
 	if (scenarioName) {
+		document.body.classList.remove('noscenario')
 		yardsticks.style.display = 'table'
 		simparams.style.display = 'table'
 		const response = await fetch(`/reset/${scenarioName}`)
@@ -140,20 +149,21 @@ function start() {
 	const inputs = Array.from(document.querySelectorAll('input, select, button'))
 	inputs.forEach(el => el.disabled=true)
 	poke(`/start/${scenarioName}`, 'POST')
-	let peeker = setInterval(peek, 200)
+	const peeker = setInterval(peek, 200)
 	async function peek() {
 		const response = await fetch(`/peek`)
 		const json = await response.json()
 		if (json.totalProgress>=1) {
 			clearInterval(peeker)
 			inputs.forEach(el => el.disabled=false)
-			progress.style.display = ''
+			document.body.classList.remove('annealing')
 		} else {
+			document.body.classList.add('annealing')
 			progressRound.value = json.roundNumber
+			progressbar.style.width = (json.totalProgress*100)+'%'
 			progressPercent.value = (json.totalProgress*100).toFixed(1)
 			progressTemp.value = json.currentTemp ? json.currentTemp.toFixed(1) : '-'
 			progressVariations.value = json.totalVariations
-			progress.style.display = 'block'
 		}
 		update(json)
 	}

@@ -1,3 +1,4 @@
+const PORT = 8080
 const HTTP = require('http')
 
 const fork    = require('child_process').fork
@@ -86,4 +87,6 @@ HTTP.createServer(function (req, res) {
 		parts.shift() // Throw away the leading ''
 		workerRequest(res, parts)
 	}
-}).listen(8080);
+}).listen(PORT)
+
+console.log(`Listening to http://localhost:${PORT}/`)
