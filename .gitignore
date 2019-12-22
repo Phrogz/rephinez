@@ -5,6 +5,7 @@ tmp.*
 data
 !data/README.md
 .vscode
+tempCodeRunnerFile.js
 
 # Logs
 logs

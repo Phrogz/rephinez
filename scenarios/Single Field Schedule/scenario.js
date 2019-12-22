@@ -208,7 +208,7 @@ const sixTeams = Schedule.fromArray(
 module.exports = {
 	name: 'Single-Field Multi-Team Schedule',
 
-	initial: () => sixTeams,
+	initial: () => eightTeams,
 	vary:    Schedule.prototype.swapGamesInAnyRound,
 	save:    s => ({content:s+'', type:'json'}),
 	html:    Schedule.prototype.html,
@@ -236,6 +236,7 @@ module.exports = {
 		"Even Scheduling":  1,
 		"Game Gaps":        0,
 		"First vs Last":    0.3,
+		"Even First vs Last": 0.1,
 	}
 
 };
