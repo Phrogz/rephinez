@@ -85,6 +85,7 @@ HTTP.createServer(function (req, res) {
 	} else {
 		const parts = req.url.split('/').map(unescape)
 		parts.shift() // Throw away the leading ''
+		if (parts[0]=='start') lastUpdate.final = false;
 		workerRequest(res, parts)
 	}
 }).listen(PORT)

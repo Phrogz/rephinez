@@ -34,15 +34,14 @@ module.exports = {
     save:    Route.prototype.serialize,
     html:    Route.prototype.html,
 
-    tempStart:              100,
-    tempFalloffVariations:  50,
-
+    tempStart:              50,
+    tempFalloffVariations:  100,
+    restartAfterVariations: 3e2,
+    stopAfterTime:            5,
     checkinAfterTime:       0.2,
-    restartAfterVariations: 1e2,
-    stopAfterVariations:    2e6,
 
     yardsticks: {
         "Total Distance": 0.1,
-        "Repeat Meals":   10
+        "Repeat Meals":   1
     }
 }

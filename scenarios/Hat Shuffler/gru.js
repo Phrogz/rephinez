@@ -49,7 +49,9 @@ const ExperienceToRank = {
 	"Club - Made Nationals":6,
 }
 
-const TeamNames = 'Red Green Blue White Orange Purple Pink'.split(' ')
+// const TeamNames = 'Red Green Blue White Orange Purple Pink'.split(' ')
+// Make this smaller to reduce HTML to try to avoid https://stackoverflow.com/questions/58425134/forcing-synchronous-node-js-ipc
+const TeamNames = 'T0 T1 T2 T3 T4 T5 T6 T7'.split(' ')
 TeamNames.forEach((name,i)=>TeamNames[name] = i)
 
 class Player {

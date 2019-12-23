@@ -170,7 +170,8 @@ function start() {
 	const inputs = Array.from(document.querySelectorAll('input, select, button'))
 	inputs.forEach(el => el.disabled=true)
 	poke(`/start/${scenarioName}`, 'POST')
-	const peeker = setInterval(peek, 200)
+	let peekInterval = document.querySelector('select[name="updateafterkind"]').value=='seconds' ? 1000*document.querySelector('input[name="updateafter"]').value : 200
+	const peeker = setInterval(peek, peekInterval)
 	async function peek() {
 		const response = await fetch(`/peek`)
 		const json = await response.json()
