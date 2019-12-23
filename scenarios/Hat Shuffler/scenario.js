@@ -20,20 +20,13 @@ module.exports = {
     clone: Season.prototype.duplicate,
 
     tempStart: 5,
-    tempFalloffVariations: 100,
-
-    restartAfterVariations: 2e2,
-
-    stopAfterVariations:    1e4,
-    // stopAfterScore:    9,
-    restartAfterScore:      18,
-    // restartAfterTemperature: 0.001,
-    // checkinAfterVariations: 5e3,
-	checkinAfterTime:       0.2,
+    tempFalloffVariations:  100,
+    restartAfterVariations: 3e2,
+    stopAfterTime:           10,
+	checkinAfterTime:         1,
 
     // rankings to run, and how important each ranking is relative to the others
     yardsticks: {
-        "Distributed Women":      0, // not needed; women are pre-distributed and kept that way by gender-based swaps
         "Distributed Giants":     4,
         "Distributed Speed":      2,
         "Distributed XP":         1,
