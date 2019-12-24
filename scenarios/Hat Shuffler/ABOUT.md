@@ -3,6 +3,7 @@ with the goals of ensuring that:
 
 1. Players get to play with as many different people as possible.
 2. Teams are as fair as possible within a round.
+3. When pairs of players request to play on the same team ("baggage") that is maintained.
 
 
 # Initial Setup
@@ -19,6 +20,18 @@ across all rounds.
 At each step the scenario picks a random round, picks two teams at random,
 randomly decides if it's going to swap men or women, and then swaps two players
 of the same gender between those two teams.
+
+When the first player selected has baggage:
+
+* If the other player has baggage of the same gender as the first player's baggage,
+  swap the baggage along with the players.
+* If the other player does not have baggage, find someone on their team with the same
+  gender as the first player's baggage, and swap them along with them.
+* If both players have baggage, but of different genders, then give up and don't
+  make any change this round.
+
+All this dancing around gender is intended to maintain the gender ratios per team.
+The logic can be greatly simplified if gender ratios were not required.
 
 
 # Yardsticks
