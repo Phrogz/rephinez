@@ -37,8 +37,34 @@ module.exports = {
 }
 
 function createSeason({playerData='data/demo.csv', savedSeason, teams=4, rounds=6}={}) {
-	const playercsv = fs.readFileSync(playerData).toString()
-	const players = csv(playercsv, {columns:true, delimiter:','}).map(p => Player.fromGRUCSV(p))
+	// \ufeff is the UTF8 BOM; the csv library barfs on it, so it needs to be removed, if present.
+	const playercsv = fs.readFileSync(playerData).toString().replace(/^\ufeff/, '')
+    const players = csv(playercsv, {columns:true, delimiter:','}).map(p => Player.fromGRUCSV(p))
+
+    // Double-check baggage assignments
+	players.filter(p => p.baggageName).forEach(p => {
+        const other = p.baggage;
+		if (other) {
+            if (other===p) {
+                console.warn(`"${p.name} asked to baggage with themself, and that's not valid.`)
+                delete p.baggageName;
+            } else {
+                if (other.baggageName) {
+                    if (other.baggage!==p) {
+                        console.warn(`"${p.name}" asked to baggage with "${other.name}", but they asked to baggage with "${other.baggageName}".`)
+                        delete p.baggageName;
+                    }
+                } else {
+                    console.warn(`"${p.name}" asked to baggage with "${other.name}", but they did not select any baggage.`)
+                    delete p.baggageName;
+                }
+            }
+		} else {
+			console.warn(`"${p.name}" asked to baggage with "${p.baggageName}", but I don't know who that is.`)
+            delete p.baggageName;
+		}
+	});
+
 	if (savedSeason) {
 		return Season.import(fs.readFileSync(savedSeason).toString(), players)
 	} else {

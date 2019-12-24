@@ -23,10 +23,10 @@ if (process.send) {
 	})
 } else {
 	// FIXME: make this command-line driven
-	const scenarioName = 'indoor'
+	const scenarioName = 'Hat Shuffler'
 	let scenario = reloadScenario(scenarioName)
-	let {state:bestState, score:bestScore, elapsed, variations, rounds} = optimize(scenario, checkinConsole)
-	console.log(`Tried ${short(variations)} variations in ${short(elapsed,2)}s (${short(variations/elapsed)}/sec), resulting in a score of ${short(bestScore.score,2)}`)
+	let {bestState, bestScore, elapsed, variations, rounds} = optimize(scenario, checkinConsole)
+	console.info(`Tried ${short(variations)} variations in ${short(elapsed,2)}s (${short(variations/elapsed)}/sec), resulting in a score of ${short(bestScore.score,2)}`)
 	if (scenario.save) exportState(scenario.save, bestState, scenarioName)
 }
 
@@ -111,7 +111,7 @@ function exportState(saveƒ, state, scenarioName) {
 	const path = `${directory}/state-${iso8601Stamp()}.${type}`
 	if (!fs.existsSync(directory)) fs.mkdirSync(directory)
 	fs.writeFileSync(path, content)
-	console.log(`Wrote ${path}`)
+	console.info(`Wrote ${path}`)
 }
 
 function measure(scenario, state) {
@@ -126,7 +126,7 @@ function measure(scenario, state) {
 			stats = statsResult
 		}
 		result.scores[name] = {raw:score, weighted:score*weight}
-		result.score += score * weight
+		if (!isNaN(score)) result.score += score * weight
 		Object.assign(result.stats, stats)
 	}
 	return result

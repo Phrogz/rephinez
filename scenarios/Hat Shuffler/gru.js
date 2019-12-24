@@ -54,6 +54,8 @@ const ExperienceToRank = {
 const TeamNames = 'T0 T1 T2 T3 T4 T5 T6 T7'.split(' ')
 TeamNames.forEach((name,i)=>TeamNames[name] = i)
 
+// Gross global hack used to associate players with their baggage, since the asynchronous library cannot handle circular references between players.
+const PlayerPool = new Map();
 class Player {
 	constructor(obj) {
 		if (obj) Object.assign(this, obj);
@@ -62,6 +64,7 @@ class Player {
 		const p = new Player;
 
 		p.name = `${csvObj.first_name.trim()} ${csvObj.last_name.trim()}`
+		PlayerPool.set(p.name, p)
 
 		const [feet, inches] = csvObj.Height.match(/\d+/g).map(parseFloat)
 		p.heightInInches = feet*12 + inches
@@ -75,18 +78,21 @@ class Player {
 		p.vector = sum>=12.2 ? 5 : sum>=11.2 ? 4 : sum>=9.8 ? 3 : sum>=8.2 ? 2 : 1
 
 		p.male = /^male/i.test(csvObj.gender)
+		p.sex  = p.male ? 'men' : 'women' // make it easier to find correct team side
 
 		p.age = csvObj.age_on_evaluation_date*1
 
 		p.speedy = p.athleticism > 3
+		p.baggageName = (csvObj.baggage || '').replace(/  +/g, ' ')
 
 		p.playingSince = csvObj['Yr Started']*1
 		p.experienced = p.playingSince < 2010
 
 		return p
 	}
-   ranking() { return [-this.vector, this.tall*1, -this.athleticism, this.age] }
-	toString() { return this.name + (this.tall ? '(T)' : '') }
+	get baggage(){ return PlayerPool.get(this.baggageName) }
+	ranking() { return [-this.vector, this.tall*1, -this.athleticism, this.age] }
+	toString() { return `${this.name}${this.male?'[M]':'[F]'}${this.tall?'(T)':''}` }
 }
 
 class Team {
@@ -107,11 +113,14 @@ class Round {
 	toString() { return this.teams.map(t=>t+'').join('\n') }
 }
 
+// Used to randomly pick a pair of items out of an array of a certain size
 const combinationsByArraySize = {
 	3: [[0,1], [0,2], [1,2]],
 	4: [[0,1], [0,2], [0,3], [1,2], [1,3], [2,3]],
 	5: [[0,1], [0,2], [0,3], [0,4], [1,2], [1,3], [1,4], [2,3], [2,4], [3,4]],
 	6: [[0,1], [0,2], [0,3], [0,4], [0,5], [1,2], [1,3], [1,4], [1,5], [2,3], [2,4], [2,5], [3,4], [3,5], [4,5]],
+	7: [[0,1], [0,2], [0,3], [0,4], [0,5], [0,6], [1,2], [1,3], [1,4], [1,5], [1,6], [2,3], [2,4], [2,5], [2,6], [3,4], [3,5], [3,6], [4,5], [4,6], [5,6]],
+	8: [[0,1], [0,2], [0,3], [0,4], [0,5], [0,6], [0,7], [1,2], [1,3], [1,4], [1,5], [1,6], [1,7], [2,3], [2,4], [2,5], [2,6], [2,7], [3,4], [3,5], [3,6], [3,7], [4,5], [4,6], [4,7], [5,6], [5,7], [6,7]],
 }
 
 const W='women', M='men';
@@ -122,37 +131,96 @@ class Season {
 	}
 
 	static fromPlayers(players, teamCount=4, roundCount=5) {
-	  // Distribute men and women across teams based on skill
-		const [men, women] =
-			players.partition(p=>p.male).map((players, index) => {
-				players = players.sort(p => p.ranking()).eachSlice(teamCount).transpose();
-				// Invert to match team(s) with fewer female players with teams with more male players, for more-even team sizes
-				if (index===1) players.reverse();
-				return players;
-			});
-		const teams = men.map((mens,i)=>new Team(mens, women[i]));
+		// Distribute men and women across teams based on skill using a hellaciously-inefficient algorithm
+		const teams = Array.from({length:teamCount}, ()=>new Team);
+
+		// Put people with baggage in before those without, to help balance at the end
+		players.sortBy(p => [p.baggage ? 0 : 1, p.ranking()]).forEach(p => {
+			if (p._addedToTeam) return;
+			// Find the team with the fewest number of players matching this player's sex
+			const leastFull = teams.sortBy(t => t[p.sex].length)[0];
+			leastFull[p.sex].push(p);
+			p._addedToTeam = true;
+			if (p.baggage) {
+				leastFull[p.baggage.sex].push(p.baggage);
+				p.baggage._addedToTeam = true;
+			}
+		});
+
 		const rounds = Array.from({length:roundCount}, ()=>new Round(teams));
 		return new Season(rounds);
-	}
-
-	static fromPlayersAndSeason(players, season) {
-
 	}
 
 	get teams() { return [...new Set(this.rounds.flatMap(g => g.teams))] }
 	duplicate() { return new Season(this.rounds) }
 	swizzle() {
 		const round = this.rounds.sample()
+
 		// Pick a random pair of unique indices
 		const teamIndices = combinationsByArraySize[round.teams.length].sample();
-		const t1 = round.teams[teamIndices[0]],
-		      t2 = round.teams[teamIndices[1]]
-		const sex = Math.random()<0.33 ? W : M;
-		// Swap random players on those two teams
-		const t1i = (t1[sex].length*Math.random()) << 0,
-		      t2i = (t2[sex].length*Math.random()) << 0;
-		[t1[sex][t1i], t2[sex][t2i]] = [t2[sex][t2i], t1[sex][t1i]]
-		return this
+		let t1 = round.teams[teamIndices[0]],
+		    t2 = round.teams[teamIndices[1]]
+		let sex = Math.random()<0.3 ? W : M;
+
+		// Pick random players on those two teams of the same sex
+		let t1i = (t1[sex].length*Math.random()) << 0,
+		    t2i = (t2[sex].length*Math.random()) << 0;
+		let p1 = t1[sex][t1i],
+		    p2 = t2[sex][t2i];
+
+		// Uh…what? This somehow works around a bug.
+		let hack1 = p1+'', hack2=p2+'';
+
+		if (!p1.baggage && !p2.baggage) {
+			// Neither have baggage? Great, it's a simple swap
+			// console.log(`Case 1: Swapping #${t1i} ${p1} with #${t2i} ${p2}`);
+			t1[sex][t1i] = p2;
+			t2[sex][t2i] = p1;
+
+		} else if (p1.baggage && p2.baggage && p1.baggage.male===p2.baggage.male) {
+			// Both have baggage of the same sex as each other? OK, swap them, too.
+
+			// console.log(`Case 2a: Swapping #${t1i} ${p1} with #${t2i} ${p2}`)
+			t1[sex][t1i] = p2;
+			t2[sex][t2i] = p1;
+
+			sex = p1.baggage.sex;
+			const b1i = t1[sex].indexOf(p1.baggage),
+				  b2i = t2[sex].indexOf(p2.baggage);
+			// console.log(`Case 2b: Swapping #${b1i} ${p1.baggage} with #${b2i} ${p2.baggage}`)
+			t1[sex][b1i] = p2.baggage;
+			t2[sex][b2i] = p1.baggage;
+
+		} else if (p1.baggage && !p2.baggage || p2.baggage && !p1.baggage) {
+			// Only one has baggage? Find a correct-sexed, unbaggaged player to use for this swap
+
+			if (p2.baggage) {
+				// Let's make it so that p1 is always the one with baggage; swap labels
+				[t1, t2, p1, p2, t1i, t2i] = [t2, t1, p2, p1, t2i, t1i]
+			}
+			const unbagged = t2[p1.baggage.sex].filter(p => p!==p2 && !p.baggage)
+			if (unbagged.length>0) {
+				const b2 = unbagged.sample();
+				const b1i = t1[p1.baggage.sex].indexOf(p1.baggage),
+					  b2i = t2[b2.sex].indexOf(b2);
+				// console.log(`Case 3a: Swapping #${t1i} ${p1} with #${t2i} ${p2}`)
+				t1[sex][t1i] = p2;
+				t2[sex][t2i] = p1;
+
+				sex = b2.sex;
+
+				// console.log(`Case 3b: Swapping #${b1i} ${p1.baggage} with #${b2i} ${b2}`)
+				t1[sex][b1i] = b2;
+				t2[sex][b2i] = p1.baggage;
+			} else {
+				// console.log(`could not find an unbaggaged player on ${p1.baggage.sex}`);
+			}
+		} else {
+			// Baggaged men can't swap with man/woman baggage. Do nothing this time.
+		}
+		// console.log(t1.players.map(p => p?(p.male?'M':'F'):'!').join(''));
+		// console.log(t2.players.map(p => p?(p.male?'M':'F'):'!').join(''));
+		return this;
 	}
 	get players() { return this.rounds[0].teams.flatMap(t=>t.players) }
 	toCSV() {
