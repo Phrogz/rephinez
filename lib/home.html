@@ -60,7 +60,7 @@
 		<th id='total-strain' class='strain'>-</th>
 	</thead><tbody></tbody></table>
 	<table id="simparams"><tbody>
-		<tr><th title="Temperature to start each round at">Starting Temp</th><td><input name="tempstart" type="number" min="0"></td></tr>
+		<tr><th title="Temperature to start each round at">Starting Temp</th><td><input name="tempstart" type="number" min="0">°</td></tr>
 		<tr><th title="How long does it take to fall to 1% of the initial temperature?">Falloff Over</th><td><input name="tempfalloff" type="number" step="1" min="1"><select name="tempfalloffkind"><option>seconds</option><option>variations</option></select></td></tr>
 		<tr><th title="When should the simulation take the best state and reheat it?">Restart After</th><td><input name="restartafter" type="number"><select name="restartafterkind"><option>seconds</option><option>variations</option><option>score</option><option>temp</option></select></td></tr>
 		<tr><th title="When should the simulation stop and let you re-assess parameters?">Stop After</th><td><input name="stopafter" type="number"><select name="stopafterkind"><option>seconds</option><option>variations</option><option>rounds</option><option>score</option></select></td></tr>

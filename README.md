@@ -5,7 +5,7 @@ and a bit of artistry.
 For example, maybe you want to create a really "good" schedule for your sports league. You provide:
 
 * An initial schedule (good or bad).
-* A method for taking one schedule and producing a slightly different one.
+* A method for taking one schedule and producing a slightly different one (better or worse).
 * One or more methods that measure a schedule and tell how "good" or "bad" it is.
 
 Rephinez will (with a little help from you) keep varying the schedule, guiding towards a really good one.
@@ -70,14 +70,15 @@ cd rephinez
 
 4. Review and adjust the Yardstick weights and their impact on the final score. Yardsticks resulting in
    a higher score will more heavily impact the state than those producing lower scores.
+   Lower scores are better; an overall score of "0.0" indicates the perfect result.
 
 5. Review the optimization settings, primarily to ensure that your simulation will stop after a reasonable
    amount of time, giving you a chance to change settings and continue.
 
-   * **Starting Temp** — Controls the initial temperature to use at the beginning of each optimization round. Higher
-     temperatures make it more likely for the simulation to accept changes that increase the score. The amount of heat
-     needed is partially dependent upon the overall score of the state. If you feel that your optimization is getting
-     stuck, either increase the temperature or lower the weightings on your yardsticks.
+   * **Starting Temp** — Controls the initial temperature to use at the beginning of each optimization round.
+     Higher temperatures make it more likely for the simulation to accept changes that increase the score.
+     The amount of heat needed is partially dependent upon the overall score of the state; 
+     if you feel that your optimization is getting stuck, increase the temperature or lower the yardstick weightings.
 
    * **Falloff Over** — The temperature will asymptotically falloff towards zero during a round. This setting controls
      how long it takes for the temperature to reach 1% of the starting temp. Cooling off more slowly takes more time,
@@ -204,7 +205,8 @@ the current state before calling your `vary` function, and then decide which to 
 
 
 ## Writing Yardsticks
-Yardsticks measure how bad a particular state for a particular desire. The ideal state would measure `0.0` on every yardstick.
+Yardsticks measure how bad a particular state is for a particular desire.
+The ideal state would measure `0.0` on every yardstick.
 
 Your scenario directory must have a `yardsticks` subdirectory with one or more modules in it, whose filenames
 without the `.js` extension match the names supplied in your `yardsticks` description. If you have a file in the
@@ -213,7 +215,7 @@ directory, but the name is not mentioned in the scenario.js `yardsticks` map, th
 Yardstick modules must export a function that takes the current state as a parameter and returns an object with 1-2 keys:
 
 * The **`score`** key is required, and must be a non-negative floating point number.
-  The higher the score, the worse the state is according to this yardstick.
+  The higher the score, the _**worse**_ the state is according to this yardstick.
 
 * The **`stats`** key is optional. It is used to provide insight into why the yardstick is producing its score.
   If present, `stats` must be an object with one or more keys. Each key is a label that will be displayed before the
@@ -286,6 +288,6 @@ named with the current date and time, e.g. `state-20190322T150550.csv`.
 
 # License & Contact
 
-Rephinez is copyright ©2019 by Gavin Kistner and is licensed under the [MIT License](http://opensource.org/licenses/MIT). See the LICENSE file for more details.
+Rephinez is copyright ©2019-2022 by Gavin Kistner and is licensed under the [MIT License](http://opensource.org/licenses/MIT). See the LICENSE file for more details.
 
 For bugs or feature requests please open [issues on GitHub](https://github.com/Phrogz/rephinez/issues). For other communication you can [email the author](mailto:!@phrogz.net?subject=Rephinez) directly.
