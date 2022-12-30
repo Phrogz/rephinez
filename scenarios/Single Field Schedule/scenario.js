@@ -54,7 +54,7 @@ class Schedule {
 	html() {
 		return `<table>${
 			this.rounds.map(r => `<tr>${
-				r.games.map(g => `<td>${g.teams.map(n=>`T${n}`).join(' ')}</td>`).join('')
+				r.games.map(g => `<td>${g.teams.map(n=>`T${n+1}`).join(' vs ')}</td>`).join('')
 			}</tr>`).join('')
 		}</table>`
 	}
@@ -89,7 +89,7 @@ class Schedule {
 		const result = [...this.blankCount]
 		this.rounds.forEach(round => {
 			const foundThisRound = {}
-			for (let i=0;i<3;++i) {
+			for (let i=0;i<2;++i) {
 				round.games[i].teams.forEach(t => {
 					if (!foundThisRound[t]) {
 						foundThisRound[t] = true
@@ -106,7 +106,7 @@ class Schedule {
 		const lastGame = this.rounds[0].games.length-1;
 		this.rounds.forEach((round,ri) => {
 			const foundThisRound = {}
-			for (let i=0;i<3;++i) {
+			for (let i=0;i<2;++i) {
 				round.games[lastGame-i].teams.forEach((t,ti) => {
 					if (!foundThisRound[t]) {
 						foundThisRound[t] = true
@@ -141,12 +141,25 @@ class Schedule {
 			const lastGameIndexByTeam = {}
 			round.games.forEach((game,i) => {
 				game.teams.forEach(t => {
-					if (lastGameIndexByTeam[t]!=null && (i-lastGameIndexByTeam[t])>=3) result[t] += (i-lastGameIndexByTeam[t]-2)**2;
+					if (lastGameIndexByTeam[t]!=null && (i-lastGameIndexByTeam[t])>=3) result[t] += (i-lastGameIndexByTeam[t]-2)**3;
 					lastGameIndexByTeam[t] = i;
 				})
 			})
 		})
 		return result
+	}
+
+	gameCountsPerRound() {
+		return this.rounds.map(round => {
+			const gamesByTeamThisRound = [...this.blankCount]
+			round.games.forEach(game => {
+				game.teams.forEach(t => {
+					gamesByTeamThisRound[t] ||= 0
+					gamesByTeamThisRound[t] += 1
+				})
+			})
+			return gamesByTeamThisRound
+		})
 	}
 
 	firstVersusLast() {
@@ -169,7 +182,7 @@ class Schedule {
 		return this
 	}
 
-	swapGamesInAnyRound() {
+	swapGamesWithinRound() {
 		const round = sampleArray(this.rounds)
 		const gamePair = sampleArray(this.gamePairs);
 		[round.games[gamePair[0]], round.games[gamePair[1]]] = [round.games[gamePair[1]], round.games[gamePair[0]]]
@@ -189,7 +202,19 @@ class Schedule {
 	toString() { return '['+this.rounds.join(',\n')+']' }
 }
 
-const eightTeams = Schedule.fromArray(
+const eightTeamsFourWeeks = Schedule.fromArray(
+// 	[[[0,1],[1,2],[1,3],[2,3],[0,2],[3,5],[4,7],[0,6],[4,5],[6,7],[4,6],[5,7]],
+// [[0,4],[0,4],[0,7],[1,4],[1,5],[1,7],[5,6],[2,3],[2,7],[3,5],[3,6],[2,6]],
+// [[0,3],[0,6],[1,6],[1,3],[0,1],[6,7],[2,5],[3,7],[2,4],[2,4],[5,7],[4,5]],
+// [[0,5],[0,5],[0,2],[1,7],[1,5],[1,4],[2,7],[4,6],[2,6],[3,4],[3,6],[3,7]]]
+
+	[[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[0,7],[0,2],[1,3],[4,6],[5,7]],
+	 [[0,4],[0,5],[0,6],[1,4],[1,5],[1,7],[2,4],[2,6],[2,7],[3,5],[3,6],[3,7]],
+	 [[0,3],[2,5],[1,6],[4,7],[0,1],[2,3],[4,5],[6,7],[0,2],[1,3],[4,6],[5,7]],
+	 [[0,4],[0,5],[0,6],[1,4],[1,5],[1,7],[2,4],[2,6],[2,7],[3,5],[3,6],[3,7]]]
+)
+
+const eightTeamsFiveWeeks = Schedule.fromArray(
 	[[[0,1],[1,2],[0,2],[3,1],[3,0],[2,4],[3,5],[4,6],[4,7],[5,6],[5,7],[6,7]],
 	 [[7,6],[6,2],[7,2],[0,6],[0,7],[2,3],[0,4],[3,1],[5,4],[4,1],[3,5],[5,1]],
 	 [[2,5],[4,5],[0,2],[2,4],[0,5],[1,4],[6,0],[1,7],[1,3],[7,6],[3,6],[7,3]],
@@ -208,35 +233,37 @@ const sixTeams = Schedule.fromArray(
 module.exports = {
 	name: 'Single-Field Multi-Team Schedule',
 
-	initial: () => eightTeams,
-	vary:    Schedule.prototype.swapGamesInAnyRound,
+	initial: () => eightTeamsFourWeeks,
+	vary:    Schedule.prototype.swapGamesWithinRound,
+	// vary:    Schedule.prototype.swapGames,
 	save:    s => ({content:s+'', type:'json'}),
 	html:    Schedule.prototype.html,
 	// load:    ƒ,  // a function that converts a serialized state into a real one
 	clone:   Schedule.prototype.clone,
 
 	/*** controlling the temperature; either falloff time or variations must be supplied (but not both) ******/
-	tempStart:                50,  // temperature to use when starting a round of optimization
-	tempFalloffVariations:    1e2, // number of variations after which it should reach one percent of initial temp
+	tempStart:                20,  // temperature to use when starting a round of optimization
+	tempFalloffVariations:    20, // number of variations after which it should reach one percent of initial temp
 
 	/*** how often to peek at the optimization progress ******************************************************/
-	checkinAfterTime:         0.2,
+	checkinAfterTime:         1,
 
 	/*** (optional) occasionally restart optimization, starting from the best state **************************/
-	restartAfterVariations:   5e2, // restart a new round after this many variations in the round
+	restartAfterVariations:   50, // restart a new round after this many variations in the round
 
 	/*** when to stop and serialize the optimization; at least one of these should be supplied  **************/
-	stopAfterVariations:      1e6, // stop optimization after this many variations
+	stopAfterVariations:      4e5, // stop optimization after this many variations
 
 	// rankings to run, and the default importance of each ranking relative to the others
 	yardsticks: {
-		"Multiple Byes":    2,
+		"Games per Round":  50,
+		"Multiple Byes":    5,
 		"Double Headers":   0.5,
-		"Triple Headers":   0,
+		"Triple Headers":   50,
 		"Even Scheduling":  1,
-		"Game Gaps":        0,
-		"First vs Last":    0.3,
-		"Even First vs Last": 0.1,
+		// "Game Gaps":        0,
+		"First vs Last":    1,
+		"Even First vs Last": 1,
 	}
 
 };

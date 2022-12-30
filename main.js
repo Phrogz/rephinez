@@ -127,7 +127,7 @@ function measure(scenario, state) {
 		}
 		result.scores[name] = {raw:score, weighted:score*weight}
 		if (!isNaN(score)) result.score += score * weight
-		Object.assign(result.stats, stats)
+		if (weight && yardsticks[name]) Object.assign(result.stats, stats)
 	}
 	return result
 }
