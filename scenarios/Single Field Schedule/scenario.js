@@ -54,7 +54,7 @@ class Schedule {
 	html() {
 		return `<table>${
 			this.rounds.map(r => `<tr>${
-				r.games.map(g => `<td>${g.teams.map(n=>`T${n}`).join(' ')}</td>`).join('')
+				r.games.map(g => `<td>${g.teams.map(n=>`T${n+1}`).join(' vs ')}</td>`).join('')
 			}</tr>`).join('')
 		}</table>`
 	}
@@ -89,7 +89,7 @@ class Schedule {
 		const result = [...this.blankCount]
 		this.rounds.forEach(round => {
 			const foundThisRound = {}
-			for (let i=0;i<3;++i) {
+			for (let i=0;i<2;++i) {
 				round.games[i].teams.forEach(t => {
 					if (!foundThisRound[t]) {
 						foundThisRound[t] = true
@@ -106,7 +106,7 @@ class Schedule {
 		const lastGame = this.rounds[0].games.length-1;
 		this.rounds.forEach((round,ri) => {
 			const foundThisRound = {}
-			for (let i=0;i<3;++i) {
+			for (let i=0;i<2;++i) {
 				round.games[lastGame-i].teams.forEach((t,ti) => {
 					if (!foundThisRound[t]) {
 						foundThisRound[t] = true
@@ -141,12 +141,25 @@ class Schedule {
 			const lastGameIndexByTeam = {}
 			round.games.forEach((game,i) => {
 				game.teams.forEach(t => {
-					if (lastGameIndexByTeam[t]!=null && (i-lastGameIndexByTeam[t])>=3) result[t] += (i-lastGameIndexByTeam[t]-2)**2;
+					if (lastGameIndexByTeam[t]!=null && (i-lastGameIndexByTeam[t])>=3) result[t] += (i-lastGameIndexByTeam[t]-2)**3;
 					lastGameIndexByTeam[t] = i;
 				})
 			})
 		})
 		return result
+	}
+
+	gameCountsPerRound() {
+		return this.rounds.map(round => {
+			const gamesByTeamThisRound = [...this.blankCount]
+			round.games.forEach(game => {
+				game.teams.forEach(t => {
+					gamesByTeamThisRound[t] ||= 0
+					gamesByTeamThisRound[t] += 1
+				})
+			})
+			return gamesByTeamThisRound
+		})
 	}
 
 	firstVersusLast() {
@@ -169,7 +182,7 @@ class Schedule {
 		return this
 	}
 
-	swapGamesInAnyRound() {
+	swapGamesWithinRound() {
 		const round = sampleArray(this.rounds)
 		const gamePair = sampleArray(this.gamePairs);
 		[round.games[gamePair[0]], round.games[gamePair[1]]] = [round.games[gamePair[1]], round.games[gamePair[0]]]
@@ -242,9 +255,10 @@ module.exports = {
 	tempFalloffVariations:    1e2, // number of variations after which it should reach one percent of initial temp
 	checkinAfterTime:         1,
 	restartAfterVariations:   5e2, // restart a new round after this many variations in the round
-	stopAfterTime:            30, // stop optimization after this many seconds
+	stopAfterTime:            30,  // stop optimization after this many seconds
 
 	yardsticks: {
+		"Games per Round"    : 50,
 		"Multiple Byes"      : 2,
 		"Double Headers"     : 0.1,
 		"Triple Headers"     : 20,
