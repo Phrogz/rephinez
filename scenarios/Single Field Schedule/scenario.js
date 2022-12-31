@@ -189,54 +189,69 @@ class Schedule {
 	toString() { return '['+this.rounds.join(',\n')+']' }
 }
 
-const eightTeams = Schedule.fromArray(
-	[[[0,1],[1,2],[0,2],[3,1],[3,0],[2,4],[3,5],[4,6],[4,7],[5,6],[5,7],[6,7]],
-	 [[7,6],[6,2],[7,2],[0,6],[0,7],[2,3],[0,4],[3,1],[5,4],[4,1],[3,5],[5,1]],
-	 [[2,5],[4,5],[0,2],[2,4],[0,5],[1,4],[6,0],[1,7],[1,3],[7,6],[3,6],[7,3]],
-	 [[4,7],[4,3],[7,3],[5,4],[5,7],[3,6],[5,0],[1,0],[6,2],[6,1],[0,2],[1,2]],
-	 [[1,5],[1,6],[2,5],[1,7],[5,6],[2,7],[4,6],[2,3],[0,7],[3,4],[0,3],[0,4]]]
-)
+// Calculate a round-robin schedule using the 'circle' algorithm
+// https://en.wikipedia.org/wiki/Round-robin_tournament#Scheduling_algorithm
+function roundRobin(teams) {
+	const loop = Array.from(Array(teams).keys())
+	const rounds = []
+	for (let i=1; i<teams; ++i) {
+		const round = []
+		rounds.push(round)
+		for (let j=0; j<teams/2; ++j) {
+			round.push([loop[j], loop[teams-j-1]].sort())
+		}
+		loop.splice(1,0,loop.pop())
+	}
+	return rounds
+}
 
-const sixTeams = Schedule.fromArray(
-	[[[0,1],[2,1],[2,0],[1,3],[2,4],[0,5],[3,4],[5,3],[5,4]],
-	 [[0,3],[0,5],[5,3],[1,0],[3,2],[4,5],[4,1],[2,1],[4,2]],
-	 [[1,4],[2,1],[4,0],[1,5],[2,0],[3,4],[5,2],[3,0],[3,5]],
-	 [[5,2],[4,2],[5,4],[3,2],[5,1],[0,4],[3,1],[0,3],[0,1]],
-	 [[3,1],[1,4],[3,4],[1,5],[3,2],[4,0],[2,5],[0,5],[0,2]]]
-)
+// Play multiple rounds of a round-robin tournament per a single 'round',
+// with a maximum number of games allowed per round, while ensuring that
+// every team plays the same number of games each round, and that every
+// team plays every other team as soon as possible.
+function multiGameRobin({teams=8, maxGamesPerRound=12, rounds=8}={}) {
+	if (teams%2) console.error('number of teams must be even')
+	const subrounds = roundRobin(teams)
+
+	// How many games each team can play
+	const gamesPerTeam = Math.floor(maxGamesPerRound / teams * 2)
+
+	const schedule = []
+	for (let r=0; r<rounds; ++r) {
+		let round = []
+		for (let i=0; i<gamesPerTeam; ++i) {
+			round = round.concat(subrounds[(r*gamesPerTeam+i) % subrounds.length])
+		}
+		schedule[r] = round
+	}
+
+	return schedule
+}
 
 module.exports = {
 	name: 'Single-Field Multi-Team Schedule',
 
-	initial: () => eightTeams,
+	initial: () => Schedule.fromArray(multiGameRobin({teams:8, rounds:4, maxGamesPerRound:12})),
 	vary:    Schedule.prototype.swapGamesInAnyRound,
 	save:    s => ({content:s+'', type:'json'}),
 	html:    Schedule.prototype.html,
 	// load:    ƒ,  // a function that converts a serialized state into a real one
 	clone:   Schedule.prototype.clone,
 
-	/*** controlling the temperature; either falloff time or variations must be supplied (but not both) ******/
 	tempStart:                50,  // temperature to use when starting a round of optimization
 	tempFalloffVariations:    1e2, // number of variations after which it should reach one percent of initial temp
-
-	/*** how often to peek at the optimization progress ******************************************************/
-	checkinAfterTime:         0.2,
-
-	/*** (optional) occasionally restart optimization, starting from the best state **************************/
+	checkinAfterTime:         1,
 	restartAfterVariations:   5e2, // restart a new round after this many variations in the round
+	stopAfterTime:            30, // stop optimization after this many seconds
 
-	/*** when to stop and serialize the optimization; at least one of these should be supplied  **************/
-	stopAfterVariations:      1e6, // stop optimization after this many variations
-
-	// rankings to run, and the default importance of each ranking relative to the others
 	yardsticks: {
-		"Multiple Byes":    2,
-		"Double Headers":   0.5,
-		"Triple Headers":   0,
-		"Even Scheduling":  1,
-		"Game Gaps":        0,
-		"First vs Last":    0.3,
-		"Even First vs Last": 0.1,
+		"Multiple Byes"      : 2,
+		"Double Headers"     : 0.1,
+		"Triple Headers"     : 20,
+		"Even Scheduling"    : 1,
+		// "Game Gaps"       : 0,
+		"First vs Last"      : 0.3,
+		"Even First vs Last" : 0.1,
 	}
 
 };
