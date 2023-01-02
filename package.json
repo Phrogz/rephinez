@@ -1,8 +1,8 @@
 {
   "name": "rephinez",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Generic annealing system for optimizing hard problems.",
-  "main": "main.js",
+  "main": "rephinez.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -11,5 +11,8 @@
     "url": "https://github.com/Phrogz/rephinez.git"
   },
   "author": "Phrogz",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "command-line-args": "^5.2.1"
+  }
 }

@@ -2,7 +2,7 @@ const PORT = 8080
 const HTTP = require('http')
 
 const fork    = require('child_process').fork
-const program = require('path').resolve('main.js')
+const program = require('path').resolve('rephinez.js')
 const worker  = fork(program, [], {stdio:['inherit', 'inherit', 'inherit', 'ipc']})
 
 let lastUpdate = {}

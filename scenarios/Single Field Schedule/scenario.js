@@ -182,7 +182,7 @@ class Schedule {
 		return this
 	}
 
-	swapGamesWithinRound() {
+	swapGamesInAnyRound() {
 		const round = sampleArray(this.rounds)
 		const gamePair = sampleArray(this.gamePairs);
 		[round.games[gamePair[0]], round.games[gamePair[1]]] = [round.games[gamePair[1]], round.games[gamePair[0]]]
@@ -244,28 +244,33 @@ function multiGameRobin({teams=8, maxGamesPerRound=12, rounds=8}={}) {
 module.exports = {
 	name: 'Single-Field Multi-Team Schedule',
 
+	// initial: () => Schedule.fromArray(
+	// 	[[[1,2],[1,4],[2,3],[1,6],[3,4],[2,5],[4,6],[3,7],[0,5],[0,6],[5,7],[0,7]],
+	// 	 [[3,5],[1,3],[1,5],[0,3],[1,7],[5,6],[0,4],[6,7],[0,2],[4,7],[2,6],[2,4]],
+	// 	 [[1,6],[0,1],[3,6],[1,4],[0,6],[3,4],[0,7],[2,3],[4,5],[2,7],[5,7],[2,5]],
+	// 	 [[2,4],[4,6],[2,6],[0,4],[1,2],[6,7],[0,3],[1,7],[0,5],[3,7],[1,5],[3,5]]]
+	// ),
 	initial: () => Schedule.fromArray(multiGameRobin({teams:8, rounds:4, maxGamesPerRound:12})),
 	vary:    Schedule.prototype.swapGamesInAnyRound,
 	save:    s => ({content:s+'', type:'json'}),
 	html:    Schedule.prototype.html,
-	// load:    ƒ,  // a function that converts a serialized state into a real one
+	load:    (json) => Schedule.fromArray(JSON.parse(json)),
 	clone:   Schedule.prototype.clone,
 
-	tempStart:                50,  // temperature to use when starting a round of optimization
-	tempFalloffVariations:    1e2, // number of variations after which it should reach one percent of initial temp
-	checkinAfterTime:         1,
-	restartAfterVariations:   5e2, // restart a new round after this many variations in the round
-	stopAfterTime:            30,  // stop optimization after this many seconds
+	tempStart:                15, // temperature to use when starting a round of optimization
+	tempFalloffVariations:    20, // number of variations after which it should reach one percent of initial temp
+	restartAfterVariations:   60, // restart a new round after this many variations in the round
+	checkinAfterTime:         1,  // updates once per second
+	stopAfterTime:            30, // stop optimization after this many seconds
 
 	yardsticks: {
 		"Games per Round"    : 50,
-		"Multiple Byes"      : 2,
-		"Double Headers"     : 0.1,
-		"Triple Headers"     : 20,
-		"Even Scheduling"    : 1,
-		// "Game Gaps"       : 0,
-		"First vs Last"      : 0.3,
-		"Even First vs Last" : 0.1,
+		"Multiple Byes"      : 5,
+		"Double Headers"     : 0.01,
+		"Triple Headers"     : 50,
+		"Even Scheduling"    : 3,
+		"First vs Last"      : 0.5,
+		"Even First vs Last" : 1,
 	}
 
 };
