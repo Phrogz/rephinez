@@ -391,7 +391,7 @@ module.exports = function(season) {
   The `restartAfter*` options in the scenario description provide a mechanism
   for doing this automatically. Consider this combination of settings:
 
-  ```json
+  ```js
   {
     tempStart:               10,
     tempFalloffVariations:   20,
