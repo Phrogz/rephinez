@@ -1,20 +1,25 @@
-This scenario takes a league of players and places them on different teams each round,
-with the goals of ensuring that:
+This scenario takes a sports league of players and places them on different
+teams each round, with the goals of ensuring that:
 
 1. Players get to play with as many different people as possible.
-2. Teams are as fair as possible within a round.
-3. When pairs of players request to play on the same team ("baggage") that is maintained.
+2. Teams are as "fair" as possible within a round (with many different criteria
+   attempting to judge "fairness").
+   * _Information about each player's abilities, height, age, and experience are
+     used when evaluating a team._
+3. When pairs of players request to play on the same team ("baggage") that
+   request is honored.
 
+![Example output shown as a table with player names and which team they are on
+each week](example.png)
 
 # Initial Setup
-The scenario can either generate a starting schedule from scratch,
-or injest a previously-saved schedule to use as the starting point.
+The scenario can either generate a starting schedule from scratch, or injest a
+previously-saved schedule to use as the starting point.
 
-When generating a new schedule, it splits the players into men and women,
-sorts them by the `Player.prototype.ranking()` function, and then distributes
-them across the specified number of teams. These initial teams are duplicated
-across all rounds.
-
+When generating a new schedule, it splits the players into men and women, sorts
+them by the `Player.prototype.ranking()` function, and then distributes them
+across the specified number of teams. These initial teams are duplicated across
+all rounds.
 
 # Variations
 At each step the scenario picks a random round, picks two teams at random,
@@ -23,54 +28,57 @@ of the same gender between those two teams.
 
 When the first player selected has baggage:
 
-* If the other player has baggage of the same gender as the first player's baggage,
-  swap the baggage along with the players.
-* If the other player does not have baggage, find someone on their team with the same
-  gender as the first player's baggage, and swap them along with them.
+* If the other player has baggage of the same gender as the first player's
+  baggage, swap the baggage along with the players.
+* If the other player does not have baggage, find someone on their team with the
+  same gender as the first player's baggage, and swap them along with them.
 * If both players have baggage, but of different genders, then give up and don't
   make any change this round.
 
-All this dancing around gender is intended to maintain the gender ratios per team.
-The logic can be greatly simplified if gender ratios were not required.
+All this dancing around gender is intended to maintain the gender ratios per
+team. The logic can be greatly simplified if gender ratios were not required.
 
 
 # Yardsticks
 
 * **Distributed Women** – measures how many women each team has and returns the
-  standard deviation of them. This yardstick is not used, since the initial season
-  generation distributes the genders evenly and the variation algorithm ensures
-  that this distribution is maintained.
+  standard deviation of them. This yardstick is not used, since the initial
+  season generation distributes the genders evenly and the variation algorithm
+  ensures that this distribution is maintained.
 
-* **Distributed Giants** — measures the standard deviation of players over 6 feet
-  on each team.
+* **Distributed Giants** — measures the standard deviation of players over 6
+  feet on each team.
 
-* **Distributed Speed** — measures the standard deviation of players who self-ranked
-  themselves as having good athleticism across the teams.
+* **Distributed Speed** — measures the standard deviation of players who
+  self-ranked themselves as having good athleticism across the teams.
 
-* **Distributed XP** — measures the standard deviation of players who started playing
-  Ultimate before 2010.
+* **Distributed XP** — measures the standard deviation of players who started
+  playing Ultimate before 2010.
 
-* **Fair Teams** — a messy yardstick, this should probably be split into multiple
-  yardsticks. It currently tries to balance two measurements: the average player vector
-  per team, and the average team vector that each player got to play on.
+* **Fair Teams** — a messy yardstick, this should probably be split into
+  multiple yardsticks. It currently tries to balance two measurements: the
+  average player vector per team, and the average team vector that each player
+  got to play on.
 
-  The goal of the first may be obvious: ensuring that in each round all teams have
-  roughly the same skill.
+  The goal of the first may be obvious: ensuring that in each round all teams
+  have roughly the same skill.
 
-  The goal of the second is to ensure that when the average vector for a team isn't
-  consistent—when the first measurement can't be zero due to other constraints—that
-  no player is consistently placed on teams that are below average.
+  The goal of the second is to ensure that when the average vector for a team
+  isn't consistent—when the first measurement can't be zero due to other
+  constraints—that no player is consistently placed on teams that are below
+  average.
 
-  Player vectors are calculated using a formula, **not an imported value**. Based on
-  how incorrect this formula can be, this likely should be changed to allow humans
-  to pre-rank players.
+  Player vectors are calculated using a formula, **not an imported value**.
+  Based on how incorrect this formula can be, this likely should be changed to
+  allow humans to pre-rank players.
 
-* **Player Exposure** — attempts to ensure that everyone gets to play with everyone else.
-  Measures how many people each person missed (didn't get to play with), and then balances
-  the average of these values (to ensure most people see most people) with the maximium of
-  these values (to help ensure no one person gets really left out) with the standard deviation
-  of these values (to help ensure that everyone misses out on the same number of people).
+* **Player Exposure** — attempts to ensure that everyone gets to play with
+  everyone else. Measures how many people each person missed (didn't get to play
+  with), and then balances the average of these values (to ensure most people
+  see most people) with the maximium of these values (to help ensure no one
+  person gets really left out) with the standard deviation of these values (to
+  help ensure that everyone misses out on the same number of people).
 
-* **Distributed Scheduling** — measures the standard deviation of players across teams,
-  to help ensure that no one person gets stuck on the same team (and hence the same schedule
-  time slot) all the time.
+* **Distributed Scheduling** — measures the standard deviation of players across
+  teams, to help ensure that no one person gets stuck on the same team (and
+  hence the same schedule time slot) all the time.

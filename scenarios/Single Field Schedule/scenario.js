@@ -121,20 +121,6 @@ class Schedule {
 		return result
 	}
 
-	gameGaps() {
-		const result = [...this.blankCount]
-		this.rounds.forEach(round => {
-			const lastGameIndexByTeam = {}
-			round.games.forEach((game,i) => {
-				game.teams.forEach(t => {
-					if (lastGameIndexByTeam[t]!=null) result[t] += (i-lastGameIndexByTeam[t]-1)**2;
-					lastGameIndexByTeam[t] = i;
-				})
-			})
-		})
-		return result
-	}
-
 	multipleByes() {
 		const result = [...this.blankCount]
 		this.rounds.forEach(round => {

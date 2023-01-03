@@ -222,7 +222,9 @@ class Season {
 		// console.log(t2.players.map(p => p?(p.male?'M':'F'):'!').join(''));
 		return this;
 	}
+
 	get players() { return this.rounds[0].teams.flatMap(t=>t.players) }
+
 	toCSV() {
 		const teamNameByTeam = new Map()
 		this.rounds.forEach(r => r.teams.forEach((t,i) => teamNameByTeam.set(t,TeamNames[i])))
@@ -237,6 +239,7 @@ class Season {
 			type:'csv'
 		};
 	}
+
 	static fromCSV(csvString, players) {
 		// Assumes a tab-delimited CSV file as output by Season.prototype.export()
 		const seasonDetails = csv(csvString, {delimiter:'\t'})
