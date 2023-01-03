@@ -1,4 +1,3 @@
-# Overview
 Rephinez is a generic tool for optimizating hard-to-solve problems through a bit
 of brute force, a bit of luck, and a bit of artistry.
 
@@ -25,7 +24,6 @@ as it runs. More on that below.
 
 <!-- code_chunk_output -->
 
-- [Overview](#overview)
 - [Installing](#installing)
 - [Running via the Web Interface](#running-via-the-web-interface)
 - [Running via Command Line](#running-via-command-line)
