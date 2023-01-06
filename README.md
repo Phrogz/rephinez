@@ -1,24 +1,24 @@
-Rephinez is a generic tool for optimizating hard-to-solve problems through a bit
+Rephinez (pronounced "[RAYF FYNZ](https://en.wikipedia.org/wiki/Ralph_Fiennes)")
+is a generic tool for optimizating hard-to-solve problems through a bit
 of brute force, a bit of luck, and a bit of artistry.
 
 For example, maybe you want to create a really "good" schedule for your sports
 league. You provide:
 
 * An initial schedule (good or bad).
-* A method for taking one schedule and producing a slightly different one
+* A method for taking one schedule and producing a _slightly_ different one
   (better or worse).
-* One or more methods that measure a schedule and tell how "good" or "bad" it
-  is.
+* One or more methods that measure the schedule and tell how "good" or "bad"
+  it is.
 
 Rephinez will (with a little help from you) keep varying the schedule, guiding
 towards a really good one.
 
-Rephinez uses [simulated
-annealing](https://en.wikipedia.org/wiki/Simulated_annealing) to "solve" what
-would otherwise be nightmare problems in combinatorics. It doesn't find the
-absolute best result, but it finds ones that are quite good, relatively quickly.
-This takes a little bit of art and finesse from you to help tune the algorithm
-as it runs. More on that below.
+Rephinez uses [simulated annealing](https://en.wikipedia.org/wiki/Simulated_annealing)
+to "solve" what would otherwise be nightmare problems in combinatorics.
+It doesn't find the absolute best result, but it finds ones that are quite good,
+relatively quickly. This takes a little bit of art and finesse from you to help
+tune the algorithm as it runs. More on that below.
 
 <!-- @import "[TOC]" {cmd="toc" depthFrom=1 depthTo=6 orderedList=false} -->
 
