@@ -1,20 +1,21 @@
-Rephinez (pronounced "[RAYF FYNZ](https://en.wikipedia.org/wiki/Ralph_Fiennes)")
+Rephinez (pronounced like "[RAYF FYNZ](https://en.wikipedia.org/wiki/Ralph_Fiennes)")
 is a generic tool for optimizating hard-to-solve problems through a bit
 of brute force, a bit of luck, and a bit of artistry.
 
 For example, maybe you want to create a really "good" schedule for your sports
 league. You provide:
 
-* An initial schedule (good or bad).
-* A method for taking one schedule and producing a _slightly_ different one
-  (better or worse).
-* One or more methods that measure the schedule and tell how "good" or "bad"
+1. An initial schedule (good or bad).
+2. A method for taking one schedule and producing a _slightly_ different one
+  (arbitrarily better or worse; don't try to get smart, just vary it somehow).
+3. One or more functions that measure a schedule and tell how "good" or "bad"
   it is.
 
 Rephinez will (with a little help from you) keep varying the schedule, guiding
 towards a really good one.
 
-Rephinez uses [simulated annealing](https://en.wikipedia.org/wiki/Simulated_annealing)
+Rephinez uses a variation of
+[simulated annealing](https://en.wikipedia.org/wiki/Simulated_annealing)
 to "solve" what would otherwise be nightmare problems in combinatorics.
 It doesn't find the absolute best result, but it finds ones that are quite good,
 relatively quickly. This takes a little bit of art and finesse from you to help
@@ -465,9 +466,11 @@ that function must return a valid state to optimize.
 * Finish Max Seeker example to have canvas-based graphical update
 * Graphs of best score vs current score
 
+
 # History
 
-* ...still awaiting an initial release...
+* **v0.7** — January 9th, 2023
+  * Initial release.
 
 
 # License & Contact
