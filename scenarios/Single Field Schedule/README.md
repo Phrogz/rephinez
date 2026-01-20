@@ -6,6 +6,11 @@ team playing 3 games per night.
 ![Example output as a table showing four rows with twelve columns each, with
 each cell showing the teams playing that round](example.png)
 
+_After writing and using this, we realized that it's possible to ~fully explore
+the schedules for "small" single-field leagues. Code for that is shared in the
+[PerfectGRUIndoorSchedule](https://github.com/Phrogz/PerfectGRUIndoorSchedule)
+repository._
+
 # Initial Setup
 The season is seeded with a predefined schedule that ensures each team plays
 multiple games each round, and plays other teams a similar number of times.
