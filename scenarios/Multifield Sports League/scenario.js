@@ -28,7 +28,8 @@ const TEAM_NAMES = Array.from({length:8}, (_,i) => `T${i+1}`)
 // Long team names for the CSV export to TopScore / Ultimate Central.
 const TEAM_NAMES_LONG = Array.from({length:8}, (_,i) => `Team ${String(i+1).padStart(2,'0')}`)
 
-const FIELD_NAMES = ['Field 1', 'Field 2', 'Field 3', 'Field 4']
+const LOCATION_NAME = 'Pleasant View Soccer Complex'
+const FIELD_NAMES = ['B1', 'B2', 'B3', 'B4']
 
 const META = {
 	dates:      DATES,
@@ -188,7 +189,7 @@ function csvToSchedule(csv) {
 
 	csv.split(/\r?\n/).forEach(line => {
 		if (!line.trim()) return
-		const [home, away, startDate, startTime, , , fieldName] = line.split(',')
+		const [home, away, startDate, startTime, , , , fieldName] = line.split(',')
 		const r = isoToRound[startDate]
 		const s = startTimeToSlot[startTime]
 		const f = fieldToIndex[fieldName]
@@ -218,7 +219,7 @@ function scheduleCsv(schedule) {
 				if (!g) continue
 				const home = TEAM_NAMES_LONG[g[0]]
 				const away = TEAM_NAMES_LONG[g[1]]
-				rows.push([home, away, mdY, start, mdY, end, FIELD_NAMES[f], f+1].join(','))
+				rows.push([home, away, mdY, start, mdY, end, LOCATION_NAME, FIELD_NAMES[f]].join(','))
 			}
 		}
 	}
