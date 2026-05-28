@@ -66,10 +66,11 @@ worker.on('message', msg => {
 	}
 })
 
-function workerRequest(res, parts) {
+function workerRequest(res, parts, storeAs) {
 	const name = parts.shift()
-	if (responseByMessage[name]) responseByMessage[name].end("(superceded)")
-	responseByMessage[name] = res
+	const key = storeAs || name
+	if (responseByMessage[key]) responseByMessage[key].end("(superceded)")
+	responseByMessage[key] = res
 	worker.send({action:name, data:parts})
 }
 
@@ -86,7 +87,9 @@ HTTP.createServer(function (req, res) {
 		const parts = req.url.split('/').map(unescape)
 		parts.shift() // Throw away the leading ''
 		if (parts[0]=='start') lastUpdate.final = false;
-		workerRequest(res, parts)
+		// loadLatest replies via 'resetResponse', so its pending HTTP response lives under 'reset'
+		const storeAs = parts[0]==='latest' ? 'reset' : parts[0]
+		workerRequest(res, parts, storeAs)
 	}
 }).listen(PORT)
 

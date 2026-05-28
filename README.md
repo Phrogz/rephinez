@@ -1,3 +1,5 @@
+# Rephinez
+
 Rephinez (pronounced like "[RAYF FYNZ](https://en.wikipedia.org/wiki/Ralph_Fiennes)")
 is a generic tool for optimizating hard-to-solve problems through a bit
 of brute force, a bit of luck, and a bit of artistry.
@@ -28,7 +30,7 @@ tune the algorithm as it runs. More on that below.
 - [Installing](#installing)
 - [Running via the Web Interface](#running-via-the-web-interface)
 - [Running via Command Line](#running-via-command-line)
-  - [Modifying Yardsticks & Weights](#modifying-yardsticks-weights)
+  - [Modifying Yardsticks & Weights](#modifying-yardsticks--weights)
   - [Modifying Run Parameters](#modifying-run-parameters)
 - [Creating a New Scenario](#creating-a-new-scenario)
   - [The Scenario Description](#the-scenario-description)
@@ -39,12 +41,13 @@ tune the algorithm as it runs. More on that below.
 - [Saving and Restoring States](#saving-and-restoring-states)
 - [TODO](#todo)
 - [History](#history)
-- [License & Contact](#license-contact)
+- [License & Contact](#license--contact)
 
 <!-- /code_chunk_output -->
 
 
-# Installing
+## Installing
+
 Rephinez requires [Node.js](https://nodejs.org/en/), and runs on a wide variety
 of operating systems.
 
@@ -59,7 +62,7 @@ npm install # install necessary software dependencies
 ```
 
 
-# Running via the Web Interface
+## Running via the Web Interface
 
 1. Launch the web server.
 
@@ -69,7 +72,8 @@ npm install # install necessary software dependencies
 
 2. Open a web browser and visit `http://localhost:8080`; you will see a list of
    scenarios with none selected:
-   <img alt="list of scenarios with none selected" src="docs/blank-scenario.png" height="32" style="vertical-align:middle">
+   <img alt="list of scenarios with none selected" src="docs/blank-scenario.png"
+   height="32" style="vertical-align:middle">
 
 3. Select a scenario to work on from the pull down menu, and you will see the
    yardsticks, simulation controls, initial scenario, and yardstick stats: <img
@@ -123,7 +127,8 @@ npm install # install necessary software dependencies
    screen to begin the optimization. The controls will be replaced with a
    progress bar while the optimization is in progress.
 
-   <img alt="list of scenarios with none selected" src="docs/progress-bar.png" style="width:100%; max-width=1600px; display:block; margin:1em auto">
+   <img alt="list of scenarios with none selected" src="docs/progress-bar.png"
+   style="width:100%; max-width=1600px; display:block; margin:1em auto">
 
    When the progress can be determined—when "Stop After" is not based on a final
    score—the progress bar will fill with green as the progress continues.
@@ -142,7 +147,7 @@ you've made local changes; no need to restart the web server), and also reset
 the optimization settings and yardstick weights to those specified in the file.
 
 
-# Running via Command Line
+## Running via Command Line
 
 ```text
 usage: node rephinez.js -s "Hat Shuffler" [-L] [--set ...] [-d] [-h] [--weights ...]
@@ -169,7 +174,7 @@ To tweak parameters and run again, use the `--latest` parameter. This will load
 the last-saved state from disk as the initial state and optimize starting from
 that point.
 
-## Modifying Yardsticks & Weights
+### Modifying Yardsticks & Weights
 
 While the web interface allows you to change the _weights_ on yardsticks between
 optimization runs, it does not allow you to change the yardstick code, or add
@@ -181,14 +186,14 @@ In addition to changing the yardstick weightings in the scenario file, you can
 use the `--weights` command line parameter to override yardstick weights. For
 example:
 
-```
+```sh
 node rephinez.js -s "My Schedule" --weights "Yardstick 1":0.5 "Yardstick 2":17
 ```
 
 …will set the weightings for those yardsticks to `0.5` and `17` respectively.
 
 
-## Modifying Run Parameters
+### Modifying Run Parameters
 
 Editing the `scenario.js` file can be an easy way to tweak the temperature
 settings, the restart, or how long the optimization runs. More convenient,
@@ -217,7 +222,7 @@ node rephinez.js -s "My Schedule"\
 ```
 
 
-# Creating a New Scenario
+## Creating a New Scenario
 
 A "scenario" describes the problem you are trying to solve.
 
@@ -229,7 +234,7 @@ Example scenarios are already in the `scenarios` directory to help guide you to
 creating your own scenario. See the README.md file in each directory for more
 details.
 
-## The Scenario Description
+### The Scenario Description
 
 Your scenario must have a file named `scenario.js` at the root of your
 scenario's directory. This file must export an object as shown:
@@ -269,6 +274,14 @@ module.exports = {
     stopAfterScore:             0, // stop optimization if a measurement produces a score less than or equal to this
     stopAfterRounds:          1e3, // stop optimization after this many rounds have been exhausted
 
+    /*** (optional) acceptance behavior on equal scores ***/
+    acceptEqualScores:       true, // if true, equal-score variations are auto-accepted as the new
+                                   // 'current' state (default false: only strictly-better ones bypass
+                                   // the temperature roll). Useful for scenarios with many score
+                                   // plateaus where the optimizer must wander among equal-score
+                                   // neighbors before finding an improvement. Equal-score variations
+                                   // never replace the historical 'best' state regardless.
+
     // rankings to run, and the default importance of each ranking relative to the others
     yardsticks: {
         "Yardstick 1 Name":   3.2,
@@ -301,7 +314,7 @@ module.exports = {
 }
 ```
 
-## Varying your States
+### Varying your States
 
 When writing code to create a new state from another one it is important that
 you do NOT attempt to make the state better in the process. If you do so, you
@@ -325,7 +338,7 @@ duplicate the current state before calling your `vary` function, and then decide
 which to keep.
 
 
-## Writing Yardsticks
+### Writing Yardsticks
 
 Yardsticks measure how bad a particular state is for a particular desire. The
 ideal state would measure `0.0` on every yardstick.
@@ -364,7 +377,33 @@ module.exports = function(season) {
 }
 ```
 
-## Picking the Right Optimization Values
+#### Adding a Description (Tooltip)
+
+A yardstick module may alternately export an object of the form
+`{ measure, description }` instead of a bare function. The `measure` function
+is the same as above; the `description` string is shown as a hover tooltip on
+the yardstick's name in the web UI, helping users understand what the score
+means and how it is computed.
+
+```js
+// yardsticks/Distributed Speed.js
+module.exports = {
+    description:
+        'Each team should have a similar number of speedy players. ' +
+        'Score is the standard deviation of the per-team count × 10.',
+    measure(season) {
+        const players = season.teams.map(t => t.players.filter(p=>p.speedy).length)
+        return {
+            score: players.standardDeviation() * 10,
+            stats: {
+                "Speedy Players per Team": players.join(' ')
+            }
+        }
+    }
+}
+```
+
+### Picking the Right Optimization Values
 
 * `tempStart`, `tempFalloff*` - heavily affect how quickly the optmization works
   (or if at all!)
@@ -418,7 +457,7 @@ module.exports = function(season) {
   * If it is too low, you'll have to keep re-running more often to start a new
     optimization after each run.
 
-## Example Scenarios
+### Example Scenarios
 
 As mentioned above, the `scenarios` directory has several scenarios which
 illustrate techniques for authoring, optimizing, and visualizing the work. Each
@@ -441,7 +480,7 @@ has a README file providing an in-depth description, but in brief:
   round, trying to ensure players get to play with most everyone, that the teams
   are "fair", while allowing players who want to play together to stay together.
 
-# Saving and Restoring States
+## Saving and Restoring States
 
 Every time an optimization run completes a file is saved in the `data` folder of
 your scenario, named with the current date and time, e.g.
@@ -458,24 +497,26 @@ line), the contents of a save file will be supplied to your `load()` function;
 that function must return a valid state to optimize.
 
 
-# TODO
+## TODO
 
 * Rewrite asynchronous worker update to avoid [this problem](https://stackoverflow.com/questions/58425134/forcing-synchronous-node-js-ipc)
 * Allow web UI to browse saved states and load them
-* Allow web UI to reset the initial state *without* resetting weights or simulation parameters
 * Finish Max Seeker example to have canvas-based graphical update
 * Graphs of best score vs current score
 
 
-# History
+## History
+
+* **v0.8** — May 28th, 2026
+  * Added Multifield Sports League scenario (to support outdoor ultimate)
 
 * **v0.7** — January 9th, 2023
   * Initial release.
 
 
-# License & Contact
+## License & Contact
 
-Rephinez is copyright ©2019-2023 by Gavin Kistner and is licensed under the
+Rephinez is copyright ©2019-2026 by Gavin Kistner and is licensed under the
 [MIT License](http://opensource.org/licenses/MIT).
 See the LICENSE file for more details.
 

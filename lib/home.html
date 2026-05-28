@@ -5,7 +5,7 @@
 	<meta http-equiv="Content-Language" content="en">
 	<title>Rephinez</title>
 	<style>
-		* { box-sizing:border-box; font-family:Calibri, 'Trebuchet MS', sans-serif; font-size:12px }
+		* { box-sizing:border-box; font-family:Calibri, 'Trebuchet MS', sans-serif; font-size:13px }
 		html, body { min-height:100%; margin:0; padding:0 }
 		body { margin:32px; margin-top:0 }
 		input { width:3em; font-family:monospace }
@@ -15,6 +15,7 @@
 
 		thead th { opacity: 0.6; text-align:left; border-bottom:1px solid #ccc }
 		tbody th { font-weight:normal; text-align:left; padding-right:0.5em }
+		tbody th[title] { cursor:help }
 		td.weight { text-align:center }
 		td.weight::before { content:'× '}
 		td.weight::after { content:' ='}
@@ -25,7 +26,7 @@
 		#output th, #output td { border:1px solid #999; background:#fafafa; padding:0.2em 0.6em }
 
 		#output::before,
-		#stats::before { content:'Yardstick Stats'; display:block; font-family:Calibri, 'Trebuchet MS'; font-weight:bold; opacity:0.6; border-bottom:1px solid #ccc; text-align:left }
+		#stats::before { content:'Yardstick Stats'; display:block; font-family:Calibri, 'Trebuchet MS'; font-size:15px; font-weight:bold; opacity:0.6; border-bottom:1px solid #ccc; text-align:left; margin-bottom:0.5em }
 		#output::before { content:'Results' }
 
 		#stats { font-family:monospace; white-space:pre }
@@ -34,14 +35,16 @@
 
 		#progress { display:none }
 		body.annealing #progress { display:block }
-		#simparams input { width:6em }
+		#simparams input, #simparams select { vertical-align:middle }
+		#simparams select { margin-left:1px }
+		#simparams input { width:6em; text-align:right }
 		#progress { position:absolute; height:32px; line-height:32px; top:0; left:0; width:100%; background:#bbb; font-size:90%; border-bottom:1px solid #999; padding:0 32px; z-index:2}
 		#progressbar { position:absolute; height:31px; background:#ceb; width:0%; left:0; top:0; z-index:0; border-right:1px solid #696 }
 		label { position:relative; display:inline-block; z-index:2; padding-right:1em }
 		select { vertical-align:middle }
+		#scenario-control { display:block; height:32px; line-height:32px; margin-bottom:1em }
 		#scenario-control label {font-weight:bold}
-		#scenario-control { display:block; height:32px; line-height:32px}
-		button { height:24px; width:24px }
+		button { height:24px; width:24px; padding:0; margin:0; border:0; background:none; line-height:24px; font-size:18px; vertical-align:middle; cursor:pointer }
 		body.noscenario #sim-control,
 		body.noscenario #scenario-control button,
 		body.noscenario #stats { display:none }
@@ -50,7 +53,7 @@
 </head><body class="noscenario">
 <section id="scenario-control">
 	<label id="scenarios">Scenario: <select></select></label>
-	<button id="restart">↺</button> <button id="go">▶</button>
+	<button id="restart" title="Reset to initial state">⏮&#xFE0F;</button> <button id="loadLatest" title="Load latest saved state">⏭&#xFE0F;</button> <button id="go" title="Start optimizing">▶&#xFE0F;</button>
 </section>
 <section id="sim-control">
 	<table id="yardsticks"><thead><tr>
@@ -83,12 +86,26 @@ scenarios.addEventListener('focus', checkScenarios, false)
 scenarios.addEventListener('change', switchScenario, false)
 go.addEventListener('click', start, false)
 restart.addEventListener('click', reset, false)
+loadLatest.addEventListener('click', loadLatestState, false)
 yardsticks.addEventListener('input', updateWeight, false)
 
 Array.from(document.querySelectorAll('#simparams input')).forEach( inp => inp.addEventListener('input', updateParam, false))
 Array.from(document.querySelectorAll('#simparams select')).forEach( inp => inp.addEventListener('input', updateParamKind, false))
 
-checkScenarios()
+function hashify(name) {
+	return name.replace(/[^a-zA-Z0-9-]/g, '')
+}
+
+checkScenarios().then(() => {
+	const hash = location.hash.slice(1)
+	if (hash) {
+		const match = [...scenarios.options].find(o => hashify(o.value) === hash)
+		if (match) {
+			scenarios.value = match.value
+			switchScenario()
+		}
+	}
+})
 
 const paramMap = {
 	tempfalloff:{
@@ -136,28 +153,41 @@ async function switchScenario() {
 	yardstickContent.innerHTML = ''
 	stats.innerHTML = output.innerHTML = lastHTML = ''
 	scenarioName = scenarios.value
+	history.replaceState(null, '', scenarioName ? '#' + hashify(scenarioName) : location.pathname)
 	if (scenarioName) {
 		document.body.classList.remove('noscenario')
 		const response = await fetch(`/reset/${scenarioName}`)
 		const json = await response.json()
-		showYardsticks(json.scenario.yardsticks)
+		showYardsticks(json.scenario.yardsticks, json.scenario.yardstickTooltips || {})
 		update(json)
 	}
 }
 
-function showYardsticks(sticklist) {
-	yardstickContent.innerHTML = Object.entries(sticklist).map(([name,score]) => `<tr>
-		<th>${name}</th>
-		<td data-yardstick='${name}' class='score'></td>
-		<td class='weight'><input data-yardstick='${name}' class='weight' value='${score}'></td>
-		<td data-yardstick='${name}' class='strain'></td>
-	</tr>`).join('')
+function showYardsticks(sticklist, tooltips) {
+	yardstickContent.innerHTML = Object.entries(sticklist).map(([name,score]) => {
+		const tip = tooltips[name]
+		const titleAttr = tip ? ` title="${tip.replace(/"/g,'&quot;')}"` : ''
+		return `<tr>
+			<th${titleAttr}>${name}</th>
+			<td data-yardstick='${name}' class='score'></td>
+			<td class='weight'><input data-yardstick='${name}' class='weight' value='${score}'></td>
+			<td data-yardstick='${name}' class='strain'></td>
+		</tr>`
+	}).join('')
 }
 
 async function reset() {
 	const response = await fetch(`/reset/${scenarioName}`)
 	const json = await response.json()
 
+	update(json)
+}
+
+async function loadLatestState() {
+	if (!scenarioName) return
+	const response = await fetch(`/latest/${scenarioName}`)
+	const json = await response.json()
+	delete json.scenario
 	update(json)
 }
 

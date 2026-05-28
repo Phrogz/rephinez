@@ -41,6 +41,7 @@ if (process.send) {
 				})
 			break;
 			case 'reset':  reset(message.data[0]); break;
+			case 'latest': loadLatestWeb(message.data[0]); break;
 			case 'start':  optimizeWeb(message.data[0]); break;
 			case 'weight': changeWeight.apply(0, message.data); break;
 			case 'param':  changeParam.apply(0, message.data); break;
@@ -66,6 +67,34 @@ function reset(scenarioName) {
 	activeScenario = reloadScenario(scenarioName)
 	activeScenario.initialState = activeScenario.initial()
 	let html = activeScenario.html && activeScenario.html.call(activeScenario.initialState, activeScenario.initialState)
+	process.send({
+		action:'resetResponse',
+		data:{
+			bestStateHTML:html,
+			bestScore:measure(activeScenario, activeScenario.initialState),
+			scenario:activeScenario,
+		}
+	})
+}
+
+function loadLatestWeb(scenarioName) {
+	if (!activeScenario || activeScenario.name!==scenarioName) {
+		activeScenario = reloadScenario(scenarioName)
+	}
+	if (!activeScenario.load) {
+		// Scenario doesn't support loading; fall back to a fresh reset.
+		return reset(scenarioName)
+	}
+	const dataDir = `./scenarios/${scenarioName}/data/`
+	const files = fs.existsSync(dataDir) ? fs.readdirSync(dataDir).sort() : []
+	if (!files.length) {
+		// No saved states yet; fall back to a fresh reset.
+		return reset(scenarioName)
+	}
+	const file = dataDir + files[files.length-1]
+	if ($DEBUG) console.log(`Loading latest state from ${file}`)
+	activeScenario.initialState = activeScenario.load(fs.readFileSync(file, 'utf8'))
+	const html = activeScenario.html && activeScenario.html.call(activeScenario.initialState, activeScenario.initialState)
 	process.send({
 		action:'resetResponse',
 		data:{
@@ -118,14 +147,30 @@ function reloadScenario(name) {
 		console.error(`Cannot load scenario "${name}" because ${scenarioDir}/ does not exist.`)
 		listScenarios()
 	} else {
-		// Reset and load the yardsticks
+		// Reset and load the yardsticks. Each yardstick module may export
+		// either a measure function directly, or an object of the form
+		// { measure, description } where `description` is optional UI tooltip
+		// text for the yardstick name.
 		yardsticks = {}
+		const tooltips = {}
 		const dir = `${scenarioDir}/yardsticks`
 		fs.readdirSync(dir).forEach(file => {
 			const name = path.basename(file, path.extname(file))
-			yardsticks[name] = rerequire(`${dir}/${file}`)
+			const mod = rerequire(`${dir}/${file}`)
+			if (typeof mod === 'function') {
+				yardsticks[name] = mod
+			} else if (mod && typeof mod.measure === 'function') {
+				yardsticks[name] = mod.measure
+				if (mod.description) tooltips[name] = mod.description
+			} else {
+				console.error(`Yardstick "${name}" must export a function or { measure, description }`)
+			}
 		});
-		return rerequire(`${scenarioDir}/scenario`)
+		const scenario = rerequire(`${scenarioDir}/scenario`)
+		// Attach (non-enumerable would be ideal but we want JSON serialization)
+		// scenario.yardstickTooltips so the UI can pick it up.
+		scenario.yardstickTooltips = tooltips
+		return scenario
 	}
 }
 
@@ -312,7 +357,7 @@ function loadSaved(scenario, opts) {
 			process.exit(1)
 		}
 		if ($DEBUG) console.log(`Loading initial state from ${file}`)
-		scenario.initialState = scenario.load(fs.readFileSync(file))
+		scenario.initialState = scenario.load(fs.readFileSync(file, 'utf8'))
 	}
 }
 
